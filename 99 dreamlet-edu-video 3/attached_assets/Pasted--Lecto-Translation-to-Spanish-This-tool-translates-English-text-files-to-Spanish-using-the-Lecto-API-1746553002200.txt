@@ -1,0 +1,270 @@
+
+Lecto Translation to Spanish
+This tool translates English text files to Spanish using the Lecto API
+
+About Lecto API
+
+Testing API Key with Sample Request:
+
+{"texts": ["Hello"], "to": ["es"], "from": "en"}
+
+API Test Response Status Code: 200
+
+API Test Response Text: {"translations":[{"to":"es","translated":["Hola"]}],"from":"en","translated_characters":5}
+
+API Response Structure:
+
+[
+0:"translations"
+1:"from"
+2:"translated_characters"
+]
+API key validation successful. Ready to translate.
+
+Found 4 lectures with English text files
+
+Select Lectures to Translate
+
+
+Course: 15 Generative AI for Beginners in 2025
+
+
+Lecture 01: 3 text files
+
+
+Lecture 02: 6 text files
+
+
+Course: 16
+
+
+Lecture 01: 3 text files
+
+
+Lecture 02: 6 text files
+
+
+Translate to Spanish
+Selected 1 lectures with 3 text files to translate
+
+Advanced Options
+
+
+Debug mode will show detailed information about API requests and responses for troubleshooting.
+
+Current API Endpoint: https://api.lecto.ai/v1/translate/text
+
+API Key: P66PA...YRH37
+
+Example API Request Format
+headers = {
+    "X-API-Key": "API_KEY",
+    "Content-Type": "application/json",
+    "Accept": "application/json"
+}
+
+data = '{"texts": ["Hello world."], "to": ["es"], "from": "en"}'
+
+response = requests.post('https://api.lecto.ai/v1/translate/text', headers=headers, data=data)
+
+
+Translation Progress
+Translation complete
+
+API Request Headers:
+
+{
+"X-API-Key":"P66PARQ-MH44AC6-HNA9BE2-25YRH37"
+"Content-Type":"application/json"
+"Accept":"application/json"
+}
+API Request Data:
+
+{"texts": ["Welcome to \"Generative AI for Beginners in 2025\"! I'm delighted you've joined us for this comprehensive theoretical exploration of one of the most transformative technologies of our time. The course you're about to embark on is specifically designed to provide you with a rock-solid conceptual foundation in generative artificial intelligence, with particular attention to its fascinating intersection with cybersecurity.\n\nLet me walk you through what we'll be covering together. Our curriculum is thoughtfully structured into 8 distinct sections, comprising a total of 26 lectures. We'll begin with the fundamentals, gradually building up to more complex concepts, ensuring you develop a cohesive understanding of this rapidly evolving field.\n\nWhat makes this course unique is its purely theoretical focus. While many courses rush into implementation, we believe that a thorough conceptual understanding is essential before diving into practical applications. That's why we'll be focusing entirely on the \"why\" and \"how\" behind generative AI systems.\n\nWho is this course for? Whether you're a complete beginner curious about AI, a professional looking to understand how these technologies might transform your industry, or someone specifically interested in the security implications of generative models \u2013 this course is designed with you in mind. No prior technical background is required, though those with some familiarity with either AI or cybersecurity concepts will find additional layers of value as we progress."], "to": ["es"], "from": "en"}
+
+API Response Status Code: 200
+
+API Response Headers:
+
+{
+"content-type":"application/json"
+"vary":"Accept-Encoding"
+"x-characters-count":"1521"
+"content-encoding":"gzip"
+"x-cloud-trace-context":"929d00cec8c5bcd7217b6a03a2542d3a"
+"date":"Tue, 06 May 2025 17:36:24 GMT"
+"server":"Google Frontend"
+"Transfer-Encoding":"chunked"
+}
+Raw Response Text: {"translations":[{"to":"es","translated":["Bienvenido a "Inteligencia Artificial Generativa para Principiantes en 2025"Estoy encantado de que se haya unido a nosotros en esta exploración teórica integral de una de las tecnologías más transformadoras de nuestra época.El curso en el que estás a punto de embarcarte está diseñado específicamente para proporcionarte una base conceptual sólida en inteligencia artificial generativa, con especial atención a su fascinante intersección con la ciberseguridad.Permíteme guiarte a través de lo que cubriremos juntos.Nuestro currículum está estructurado de manera reflexiva en 8 secciones distintas, que comprenden un total de 26 conferencias.Comenzaremos con los conceptos básicos, construyendo gradualmente hasta conceptos más complejos, asegurándonos de que desarrolles una comprensión coherente de este campo en constante evolución.Lo que hace que este curso sea único es su enfoque puramente teórico.Mientras que muchos cursos se apresuran a implementar, creemos que una comprensión conceptual exhaustiva es esencial antes de sumergirse en aplicaciones prácticas.Es por eso que nos centraremos enteramente en el "por qué" y el "cómo" detrás de los sistemas de inteligencia artificial generativa.¿Para quién es este curso?Ya seas un principiante completo curioso sobre la IA, un profesional que busca entender cómo estas tecnologías podrían transformar tu industria, o alguien específicamente interesado en las implicaciones de seguridad de los modelos generativos, este curso está diseñado pensando en ti.No se requiere conocimiento técnico previo, aunque aquellos con cierta familiaridad con conceptos de inteligencia artificial o ciberseguridad encontrarán capas adicionales de valor a medida que avanzamos."]}],"from":"en","translated_characters":1521}
+
+API Response Body:
+
+{
+  "translations": [
+    {
+      "to": "es",
+      "translated": [
+        "Bienvenido a \"Inteligencia Artificial Generativa para Principiantes en 2025\"Estoy encantado de que se haya unido a nosotros en esta exploraci\u00f3n te\u00f3rica integral de una de las tecnolog\u00edas m\u00e1s transformadoras de nuestra \u00e9poca.El curso en el que est\u00e1s a punto de embarcarte est\u00e1 dise\u00f1ado espec\u00edficamente para proporcionarte una base conceptual s\u00f3lida en inteligencia artificial generativa, con especial atenci\u00f3n a su fascinante intersecci\u00f3n con la ciberseguridad.Perm\u00edteme guiarte a trav\u00e9s de lo que cubriremos juntos.Nuestro curr\u00edculum est\u00e1 estructurado de manera reflexiva en 8 secciones distintas, que comprenden un total de 26 conferencias.Comenzaremos con los conceptos b\u00e1sicos, construyendo gradualmente hasta conceptos m\u00e1s complejos, asegur\u00e1ndonos de que desarrolles una comprensi\u00f3n coherente de este campo en constante evoluci\u00f3n.Lo que hace que este curso sea \u00fanico es su enfoque puramente te\u00f3rico.Mientras que muchos cursos se apresuran a implementar, creemos que una comprensi\u00f3n conceptual exhaustiva es esencial antes de sumergirse en aplicaciones pr\u00e1cticas.Es por eso que nos centraremos enteramente en el \"por qu\u00e9\" y el \"c\u00f3mo\" detr\u00e1s de los sistemas de inteligencia artificial generativa.\u00bfPara qui\u00e9n es este curso?Ya seas un principiante completo curioso sobre la IA, un profesional que busca entender c\u00f3mo estas tecnolog\u00edas podr\u00edan transformar tu industria, o alguien espec\u00edficamente interesado en las implicaciones de seguridad de los modelos generativos, este curso est\u00e1 dise\u00f1ado pensando en ti.No se requiere conocimiento t\u00e9cnico previo, aunque aquellos con cierta familiaridad con conceptos de inteligencia artificial o ciberseguridad encontrar\u00e1n capas adicionales de valor a medida que avanzamos."
+      ]
+    }
+  ],
+  "from": "en",
+  "translated_characters": 1521
+}
+
+Could not find translations in the expected format
+
+Response keys:
+
+[
+0:"translations"
+1:"from"
+2:"translated_characters"
+]
+Number of translations: 1
+
+Translation 0 keys:
+
+[
+0:"to"
+1:"translated"
+]
+API Request Headers:
+
+{
+"X-API-Key":"P66PARQ-MH44AC6-HNA9BE2-25YRH37"
+"Content-Type":"application/json"
+"Accept":"application/json"
+}
+API Request Data:
+
+{"texts": ["You might be wondering about the purely theoretical approach we're taking in this course. Let me explain why this matters so much. In the rapidly evolving field of generative AI, practical implementations change constantly \u2013 tools, frameworks, and best practices can become outdated in months. However, the theoretical underpinnings that guide these implementations remain remarkably stable.\n\nBy focusing on theory, you'll gain something far more valuable than temporary technical skills \u2013 you'll develop a mental framework that allows you to understand, evaluate, and adapt to any generative AI development that emerges in the coming years. This conceptual mastery is what separates those who can merely use AI tools from those who can truly understand their capabilities, limitations, and implications.\n\nThroughout this course, you'll acquire a comprehensive understanding of neural network architectures, the mathematics behind generative models, core security principles, and the ethical considerations that shape responsible AI development. This knowledge base will serve as your foundation regardless of which direction your professional journey takes.\n\nUnlike hands-on courses that focus on specific tools or coding practices, our approach emphasizes the universal principles that govern generative AI systems. This distinction is crucial \u2013 while coding skills may need frequent updating, theoretical knowledge provides lasting value and transferable insights across multiple domains."], "to": ["es"], "from": "en"}
+
+API Response Status Code: 200
+
+API Response Headers:
+
+{
+"content-type":"application/json"
+"vary":"Accept-Encoding"
+"x-characters-count":"1491"
+"content-encoding":"gzip"
+"x-cloud-trace-context":"6a09e24e2d744aa047ed8162dde1e7e5"
+"date":"Tue, 06 May 2025 17:36:35 GMT"
+"server":"Google Frontend"
+"Transfer-Encoding":"chunked"
+}
+Raw Response Text: {"translations":[{"to":"es","translated":["Es posible que se esté preguntando sobre el enfoque puramente teórico que estamos adoptando en este curso.Déjame explicar por qué esto es tan importante.En el campo en constante evolución de la inteligencia artificial generativa, las implementaciones prácticas cambian constantemente: las herramientas, los marcos y las mejores prácticas pueden quedar obsoletas en cuestión de meses.Sin embargo, los fundamentos teóricos que guían estas implementaciones siguen siendo notablemente estables.Al centrarte en la teoría, ganarás algo mucho más valioso que habilidades técnicas temporales: desarrollarás un marco mental que te permita entender, evaluar y adaptarte a cualquier desarrollo de inteligencia artificial generativa que surja en los próximos años.Esta maestría conceptual es lo que separa a aquellos que pueden utilizar simplemente herramientas de inteligencia artificial de aquellos que pueden comprender verdaderamente sus capacidades, limitaciones e implicaciones.A lo largo de este curso, adquirirá una comprensión integral de las arquitecturas de redes neuronales, las matemáticas detrás de los modelos generativos, los principios de seguridad básicos y las consideraciones éticas que configuran el desarrollo responsable de la inteligencia artificial.Esta base de conocimientos servirá como tu fundamento, independientemente de la dirección que tome tu camino profesional.A diferencia de los cursos prácticos que se centran en herramientas específicas o prácticas de codificación, nuestro enfoque enfatiza los principios universales que rigen los sistemas de inteligencia artificial generativa.Esta distinción es crucial: si bien las habilidades de codificación pueden necesitar actualizaciones frecuentes, el conocimiento teórico proporciona un valor duradero y perspicacias transferibles en múltiples dominios."]}],"from":"en","translated_characters":1491}
+
+API Response Body:
+
+{
+  "translations": [
+    {
+      "to": "es",
+      "translated": [
+        "Es posible que se est\u00e9 preguntando sobre el enfoque puramente te\u00f3rico que estamos adoptando en este curso.D\u00e9jame explicar por qu\u00e9 esto es tan importante.En el campo en constante evoluci\u00f3n de la inteligencia artificial generativa, las implementaciones pr\u00e1cticas cambian constantemente: las herramientas, los marcos y las mejores pr\u00e1cticas pueden quedar obsoletas en cuesti\u00f3n de meses.Sin embargo, los fundamentos te\u00f3ricos que gu\u00edan estas implementaciones siguen siendo notablemente estables.Al centrarte en la teor\u00eda, ganar\u00e1s algo mucho m\u00e1s valioso que habilidades t\u00e9cnicas temporales: desarrollar\u00e1s un marco mental que te permita entender, evaluar y adaptarte a cualquier desarrollo de inteligencia artificial generativa que surja en los pr\u00f3ximos a\u00f1os.Esta maestr\u00eda conceptual es lo que separa a aquellos que pueden utilizar simplemente herramientas de inteligencia artificial de aquellos que pueden comprender verdaderamente sus capacidades, limitaciones e implicaciones.A lo largo de este curso, adquirir\u00e1 una comprensi\u00f3n integral de las arquitecturas de redes neuronales, las matem\u00e1ticas detr\u00e1s de los modelos generativos, los principios de seguridad b\u00e1sicos y las consideraciones \u00e9ticas que configuran el desarrollo responsable de la inteligencia artificial.Esta base de conocimientos servir\u00e1 como tu fundamento, independientemente de la direcci\u00f3n que tome tu camino profesional.A diferencia de los cursos pr\u00e1cticos que se centran en herramientas espec\u00edficas o pr\u00e1cticas de codificaci\u00f3n, nuestro enfoque enfatiza los principios universales que rigen los sistemas de inteligencia artificial generativa.Esta distinci\u00f3n es crucial: si bien las habilidades de codificaci\u00f3n pueden necesitar actualizaciones frecuentes, el conocimiento te\u00f3rico proporciona un valor duradero y perspicacias transferibles en m\u00faltiples dominios."
+      ]
+    }
+  ],
+  "from": "en",
+  "translated_characters": 1491
+}
+
+Could not find translations in the expected format
+
+Response keys:
+
+[
+0:"translations"
+1:"from"
+2:"translated_characters"
+]
+Number of translations: 1
+
+Translation 0 keys:
+
+[
+0:"to"
+1:"translated"
+]
+API Request Headers:
+
+{
+"X-API-Key":"P66PARQ-MH44AC6-HNA9BE2-25YRH37"
+"Content-Type":"application/json"
+"Accept":"application/json"
+}
+API Request Data:
+
+{"texts": ["Let's briefly preview the key topics we'll be exploring throughout this course. First, we'll dive deep into Generative AI itself \u2013 understanding what makes these systems capable of creating seemingly original content, the various architectural approaches that enable this creativity, and the remarkable capabilities and current limitations of these technologies.\n\nWe'll then explore Cybersecurity fundamentals, examining how traditional security principles are being challenged and transformed in an AI-driven world. From data protection to system vulnerabilities, you'll gain insight into the security considerations that have become increasingly critical as AI systems permeate every sector.\n\nThe most exciting part of our journey will be examining where these two fields converge \u2013 how generative AI is simultaneously creating new security challenges while offering powerful tools to address existing ones. This intersection represents one of the most dynamic and consequential areas of technological development in 2025.\n\nThroughout our exploration, we'll consistently examine the ethical dimensions and future trajectories of these technologies. We'll consider questions of privacy, bias, accountability, and the broader societal impacts of increasingly capable generative systems. Understanding these ethical considerations isn't just academically interesting \u2013 it's absolutely essential for responsible engagement with these powerful tools.\n\nOur approach is intentionally holistic. Rather than treating generative AI, cybersecurity, ethics, and future trends as separate topics, we'll explore how they form an interconnected ecosystem, with developments in one area frequently triggering ripple effects across the others. By the end of this course, you'll have developed not just knowledge of individual concepts, but an integrated understanding of this entire technological landscape."], "to": ["es"], "from": "en"}
+
+API Response Status Code: 200
+
+API Response Headers:
+
+{
+"content-type":"application/json"
+"vary":"Accept-Encoding"
+"x-characters-count":"1892"
+"content-encoding":"gzip"
+"x-cloud-trace-context":"8ae93baee79a2bc3fc49694313c472ca"
+"date":"Tue, 06 May 2025 17:36:37 GMT"
+"server":"Google Frontend"
+"Transfer-Encoding":"chunked"
+}
+Raw Response Text: {"translations":[{"to":"es","translated":["Vamos a preview brevemente los temas clave que exploraremos a lo largo de este curso.Primero, profundizaremos en la Inteligencia Artificial Generativa en sí - entendiendo qué hace que estos sistemas sean capaces de crear contenido aparentemente original, los diversos enfoques arquitectónicos que permiten esta creatividad y las notables capacidades y limitaciones actuales de estas tecnologías.Luego exploraremos los fundamentos de la ciberseguridad, examinando cómo los principios de seguridad tradicionales están siendo cuestionados y transformados en un mundo impulsado por la inteligencia artificial.Desde la protección de datos hasta las vulnerabilidades del sistema, obtendrá información sobre las consideraciones de seguridad que se han vuelto cada vez más críticas a medida que los sistemas de inteligencia artificial se infiltran en todos los sectores.La parte más emocionante de nuestro viaje será examinar dónde convergen estos dos campos: cómo el inteligencia artificial generativa está creando simultáneamente nuevos desafíos de seguridad mientras ofrece herramientas poderosas para abordar los existentes.Esta intersección representa una de las áreas más dinámicas y consecuentes del desarrollo tecnológico en 2025.A lo largo de nuestra exploración, examinaremos consistentemente las dimensiones éticas y las trayectorias futuras de estas tecnologías.Consideraremos cuestiones de privacidad, sesgo, responsabilidad y los impactos sociales más amplios de los sistemas generativos cada vez más capaces.Entender estas consideraciones éticas no es solo interesante desde el punto de vista académico, sino que es absolutamente esencial para una participación responsable con estas herramientas poderosas.Nuestro enfoque es intencionalmente holístico.En lugar de tratar la inteligencia artificial generativa, la ciberseguridad, la ética y las tendencias futuras como temas separados, exploraremos cómo forman un ecosistema interconectado, con desarrollos en un área que con frecuencia provocan efectos en cadena en las demás.Al final de este curso, habrás desarrollado no solo conocimiento de conceptos individuales, sino una comprensión integrada de todo este panorama tecnológico."]}],"from":"en","translated_characters":1892}
+
+API Response Body:
+
+{
+  "translations": [
+    {
+      "to": "es",
+      "translated": [
+        "Vamos a preview brevemente los temas clave que exploraremos a lo largo de este curso.Primero, profundizaremos en la Inteligencia Artificial Generativa en s\u00ed - entendiendo qu\u00e9 hace que estos sistemas sean capaces de crear contenido aparentemente original, los diversos enfoques arquitect\u00f3nicos que permiten esta creatividad y las notables capacidades y limitaciones actuales de estas tecnolog\u00edas.Luego exploraremos los fundamentos de la ciberseguridad, examinando c\u00f3mo los principios de seguridad tradicionales est\u00e1n siendo cuestionados y transformados en un mundo impulsado por la inteligencia artificial.Desde la protecci\u00f3n de datos hasta las vulnerabilidades del sistema, obtendr\u00e1 informaci\u00f3n sobre las consideraciones de seguridad que se han vuelto cada vez m\u00e1s cr\u00edticas a medida que los sistemas de inteligencia artificial se infiltran en todos los sectores.La parte m\u00e1s emocionante de nuestro viaje ser\u00e1 examinar d\u00f3nde convergen estos dos campos: c\u00f3mo el inteligencia artificial generativa est\u00e1 creando simult\u00e1neamente nuevos desaf\u00edos de seguridad mientras ofrece herramientas poderosas para abordar los existentes.Esta intersecci\u00f3n representa una de las \u00e1reas m\u00e1s din\u00e1micas y consecuentes del desarrollo tecnol\u00f3gico en 2025.A lo largo de nuestra exploraci\u00f3n, examinaremos consistentemente las dimensiones \u00e9ticas y las trayectorias futuras de estas tecnolog\u00edas.Consideraremos cuestiones de privacidad, sesgo, responsabilidad y los impactos sociales m\u00e1s amplios de los sistemas generativos cada vez m\u00e1s capaces.Entender estas consideraciones \u00e9ticas no es solo interesante desde el punto de vista acad\u00e9mico, sino que es absolutamente esencial para una participaci\u00f3n responsable con estas herramientas poderosas.Nuestro enfoque es intencionalmente hol\u00edstico.En lugar de tratar la inteligencia artificial generativa, la ciberseguridad, la \u00e9tica y las tendencias futuras como temas separados, exploraremos c\u00f3mo forman un ecosistema interconectado, con desarrollos en un \u00e1rea que con frecuencia provocan efectos en cadena en las dem\u00e1s.Al final de este curso, habr\u00e1s desarrollado no solo conocimiento de conceptos individuales, sino una comprensi\u00f3n integrada de todo este panorama tecnol\u00f3gico."
+      ]
+    }
+  ],
+  "from": "en",
+  "translated_characters": 1892
+}
+
+Could not find translations in the expected format
+
+Response keys:
+
+[
+0:"translations"
+1:"from"
+2:"translated_characters"
+]
+Number of translations: 1
+
+Translation 0 keys:
+
+[
+0:"to"
+1:"translated"
+]
+Translation Results
+Successfully Translated
+
+0/3
+Original Characters
+
+0
+Translated Characters
+
+0
+16 - Lecture 01
+
+Summary: 0 successful, 3 failed
+
+Errors:
+
+01.txt: Translation failed: No Spanish translation found in response
+02.txt: Translation failed: No Spanish translation found in response
+03.txt: Translation failed: No Spanish translation found in response
+All translations failed. Please check the API key and try again.

@@ -1,0 +1,42 @@
+Processing: 15 Generative AI for Beginners in 2025 - Lecture 01
+Debug - Sending 3 texts for translation
+
+Debug - API Endpoint: https://api.lecto.ai/v1/translate/text
+
+Debug - Request payload: {'texts': ['Welcome to "Generative AI for Beginners in 2025"! I'm delighted you've joined us for this comprehensive theoretical exploration of one of the most transformative technologies of our time. The course you're about to embark on is specifically designed to provide you with a rock-solid conceptual foundation in generative artificial intelligence, with particular attention to its fascinating intersection with cybersecurity.', "Let me walk you through what we'll be covering together. Our curriculum is thoughtfully structured into 8 distinct sections, comprising a total of 26 lectures. We'll begin with the fundamentals, gradually building up to more complex concepts, ensuring you develop a cohesive understanding of this rapidly evolving field.", 'What makes this course unique is its purely theoretical focus. While many courses rush into implementation, we believe that a thorough conceptual understanding is essential before diving into practical applications. That's why we'll be focusing entirely on the "why" and "how" behind generative AI systems.'], 'to': ['es'], 'from': 'en'}
+
+Debug - Response status: 200
+
+Debug - Response headers: {'content-type': 'application/json', 'vary': 'Accept-Encoding', 'x-characters-count': '1047', 'content-encoding': 'gzip', 'x-cloud-trace-context': '8ccceb3ba0f949007f0a1fa927675c60;o=1', 'date': 'Tue, 06 May 2025 16:12:52 GMT', 'server': 'Google Frontend', 'Transfer-Encoding': 'chunked'}
+
+Debug - Response text: {"translations":[{"to":"es","translated":["Bienvenido a "Inteligencia Artificial Generativa para Principiantes en 2025"Estoy encantado de que se haya unido a nosotros en esta exploración teórica integral de una de las tecnologías más transformadoras de nuestra época.El curso en el que está a punto de embarcarse está diseñado específicamente para brindarle una base conceptual sólida en inteligencia artificial generativa, con especial atención a su fascinante intersección con la ciberseguridad."
+
+Debug - Response keys: ['translations', 'from', 'translated_characters']
+
+Debug - Translations field present: True
+
+Debug - Looking for translations in response structure
+
+Debug - Standard format not found, trying alternate response formats
+
+Debug - Could not find translations in response structure
+
+Debug - Full response data: {'translations': [{'to': 'es', 'translated': ['Bienvenido a "Inteligencia Artificial Generativa para Principiantes en 2025"Estoy encantado de que se haya unido a nosotros en esta exploración teórica integral de una de las tecnologías más transformadoras de nuestra época.El curso en el que está a punto de embarcarse está diseñado específicamente para brindarle una base conceptual sólida en inteligencia artificial generativa, con especial atención a su fascinante intersección con la ciberseguridad.', 'Permíteme guiarte a través de lo que cubriremos juntos.Nuestro currículum está estructurado de manera reflexiva en 8 secciones distintas, que comprenden un total de 26 conferencias.Comenzaremos con los conceptos básicos, construyendo gradualmente hasta conceptos más complejos, asegurándonos de que desarrolles una comprensión coherente de este campo en constante evolución.', 'Lo que hace que este curso sea único es su enfoque puramente teórico.Mientras que muchos cursos se apresuran a implementar, creemos que una comprensión conceptual exhaustiva es esencial antes de sumergirse en aplicaciones prácticas.Es por eso que nos centraremos enteramente en el "por qué" y el "cómo" detrás de los sistemas de inteligencia artificial generativa.']}], 'from': 'en', 'translated_characters': 1047}
+
+Debug - Sending 3 texts for translation
+
+Debug - API Endpoint: https://api.lecto.ai/v1/translate/text
+
+Debug - Request payload: {'texts': ['Welcome to "Generative AI for Beginners in 2025"! I'm delighted you've joined us for this comprehensive theoretical exploration of one of the most transformative technologies of our time. The course you're about to embark on is specifically designed to provide you with a rock-solid conceptual foundation in generative artificial intelligence, with particular attention to its fascinating intersection with cybersecurity.', "Let me walk you through what we'll be covering together. Our curriculum is thoughtfully structured into 8 distinct sections, comprising a total of 26 lectures. We'll begin with the fundamentals, gradually building up to more complex concepts, ensuring you develop a cohesive understanding of this rapidly evolving field.", 'What makes this course unique is its purely theoretical focus. While many courses rush into implementation, we believe that a thorough conceptual understanding is essential before diving into practical applications. That's why we'll be focusing entirely on the "why" and "how" behind generative AI systems.'], 'to': ['es'], 'from': 'en'}
+
+Debug - Request timed out - the Lecto API did not respond in time
+
+Debug - Sending 3 texts for translation
+
+Debug - API Endpoint: https://api.lecto.ai/v1/translate/text
+
+Debug - Request payload: {'texts': ['Welcome to "Generative AI for Beginners in 2025"! I'm delighted you've joined us for this comprehensive theoretical exploration of one of the most transformative technologies of our time. The course you're about to embark on is specifically designed to provide you with a rock-solid conceptual foundation in generative artificial intelligence, with particular attention to its fascinating intersection with cybersecurity.', "Let me walk you through what we'll be covering together. Our curriculum is thoughtfully structured into 8 distinct sections, comprising a total of 26 lectures. We'll begin with the fundamentals, gradually building up to more complex concepts, ensuring you develop a cohesive understanding of this rapidly evolving field.", 'What makes this course unique is its purely theoretical focus. While many courses rush into implementation, we believe that a thorough conceptual understanding is essential before diving into practical applications. That's why we'll be focusing entirely on the "why" and "how" behind generative AI systems.'], 'to': ['es'], 'from': 'en'}
+
+Debug - Request timed out - the Lecto API did not respond in time
+
+Error translating 01.txt: Translation failed after 3 attempts: Request timed out - the Lecto API did not respond in time

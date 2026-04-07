@@ -1,0 +1,44 @@
+{
+  "started_at": "2025-09-01T15:42:32.233166",
+  "workflow_id": "workflow_1756721552",
+  "total_steps": 3,
+  "completed_steps": 2,
+  "failed_steps": 1,
+  "step_results": [
+    {
+      "step_id": "01_adjust",
+      "step_name": "Adjust AAA EEE",
+      "success": false,
+      "message": "No AAA or EEE files found in project directory",
+      "data": {},
+      "timestamp": "2025-09-01T15:42:32.235505"
+    },
+    {
+      "step_id": "02_rename",
+      "step_name": "Rename Files",
+      "success": true,
+      "message": "Renamed 0 files, deleted 0 files, 0 errors",
+      "data": {
+        "renamed": 0,
+        "deleted": 0,
+        "errors": 0,
+        "details": []
+      },
+      "timestamp": "2025-09-01T15:42:32.747152"
+    },
+    {
+      "step_id": "03_save_text",
+      "step_name": "Save Text Sections",
+      "success": true,
+      "message": "No transcript or summary files found to process",
+      "data": {
+        "transcript_sections": 0,
+        "summary_sections": 0
+      },
+      "timestamp": "2025-09-01T15:42:33.261081"
+    }
+  ],
+  "overall_success": false,
+  "completed_at": "2025-09-01T15:42:33.764627",
+  "total_duration": 1
+}

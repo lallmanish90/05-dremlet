@@ -1,0 +1,54 @@
+Processing: 15 Generative AI for Beginners in 2025 - Lecture 01
+Error translating 01.txt: Translation failed after 3 attempts: No translations found in response
+
+Error translating 02.txt: Translation failed after 3 attempts: No translations found in response
+
+Error translating 03.txt: Translation failed after 3 attempts: No translations found in response
+
+Processing: 15 Generative AI for Beginners in 2025 - Lecture 02
+Error translating 01.txt: Translation failed after 3 attempts: No translations found in response
+
+Error translating 02.txt: Translation failed after 3 attempts: No translations found in response
+
+Error translating 03.txt: Translation failed after 3 attempts: No translations found in response
+
+Error translating 04.txt: Translation failed after 3 attempts: No translations found in response
+
+Error translating 05.txt: Translation failed after 3 attempts: No translations found in response
+
+Error translating 06.txt: Translation failed after 3 attempts: No translations found in response
+
+Processing: 16 - Lecture 01
+Error translating 01.txt: Translation failed after 3 attempts: No translations found in response
+
+Error translating 02.txt: Translation failed after 3 attempts: No translations found in response
+
+Error translating 03.txt: Translation failed after 3 attempts: No translations found in response
+
+Processing: 16 - Lecture 02
+Error translating 01.txt: Translation failed after 3 attempts: No translations found in response
+
+Error translating 02.txt: Translation failed after 3 attempts: No translations found in response
+
+Error translating 03.txt: Translation failed after 3 attempts: No translations found in response
+
+Error translating 04.txt: Translation failed after 3 attempts: No translations found in response
+
+Error translating 05.txt: Translation failed after 3 attempts: No translations found in response
+
+Error translating 06.txt: Translation failed after 3 attempts: No translations found in response
+
+Translation to Spanish completed!
+
+Overall Results
+Total files processed: 18
+
+Successfully translated: 0
+
+Skipped (already translated): 0
+
+Errors: 18
+
+Total characters translated: 0
+
+Some files had translation errors. Check the logs above for details.

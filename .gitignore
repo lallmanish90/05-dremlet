@@ -1,0 +1,16 @@
+# Large data directories
+input/
+02 dreamlet-cli/input/
+02 dreamlet-cli/output/
+
+# OS files
+.DS_Store
+.omx/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Zip archives
+*.zip

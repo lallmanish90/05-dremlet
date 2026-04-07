@@ -1,0 +1,11 @@
+{
+  "workflow_id": "31 Comprehensive Theoretical Course on Bug Bounty Programs and AI-Driven Cybersecurity_1756667673",
+  "step_id": "07_tts_kokoro",
+  "timestamp": "2025-09-01T00:44:56.145120",
+  "data": {
+    "status": "completed",
+    "step_number": 5,
+    "total_steps": 7,
+    "result": "Converting text to speech with Kokoro TTS completed successfully"
+  }
+}

@@ -1,0 +1,497 @@
+Windows PowerShell
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+Install the latest PowerShell for new features and improvements! https://aka.ms/PSWindows
+
+PS C:\Users\lallm> cd C:\Users\lallm\code\DreamletEduVideo
+PS C:\Users\lallm\code\DreamletEduVideo> docker build -t dreamlet-production-system .
+[+] Building 9.9s (9/16)                                                                                                   docker:desktop-linux
+ => [internal] load build definition from Dockerfile                                                                                       0.0s
+ => => transferring dockerfile: 2.30kB                                                                                                     0.0s
+ => [internal] load metadata for docker.io/library/python:3.11-slim                                                                        3.0s 
+ => [internal] load .dockerignore                                                                                                          0.0s
+ => => transferring context: 678B                                                                                                          0.0s 
+ => [ 1/12] FROM docker.io/library/python:3.11-slim@sha256:82c07f2f6e35255b92eb16f38dbd22679d5e8fb523064138d7c6468e7bf0c15b                0.0s 
+ => => resolve docker.io/library/python:3.11-slim@sha256:82c07f2f6e35255b92eb16f38dbd22679d5e8fb523064138d7c6468e7bf0c15b                  0.0s 
+ => [internal] load build context                                                                                                          0.0s 
+ => => transferring context: 3.24kB                                                                                                        0.0s
+ => CACHED [ 2/12] WORKDIR /app                                                                                                            0.0s 
+ => CACHED [ 3/12] RUN apt-get update && apt-get install -y --no-install-recommends     ffmpeg     libsm6     libxext6     libxrender1     0.0s 
+ => CACHED [ 4/12] COPY pyproject.toml setup.py ./                                                                                         0.0s 
+ => ERROR [ 5/12] RUN pip install --no-cache-dir --upgrade pip &&     pip install --no-cache-dir -e .                                      6.9s 
+------
+ > [ 5/12] RUN pip install --no-cache-dir --upgrade pip &&     pip install --no-cache-dir -e .:
+1.583 Requirement already satisfied: pip in /usr/local/lib/python3.11/site-packages (24.0)
+1.877 Collecting pip
+1.971   Downloading pip-25.0.1-py3-none-any.whl.metadata (3.7 kB)
+1.995 Downloading pip-25.0.1-py3-none-any.whl (1.8 MB)
+2.098    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.8/1.8 MB 18.7 MB/s eta 0:00:00
+2.135 Installing collected packages: pip
+2.135   Attempting uninstall: pip
+2.137     Found existing installation: pip 24.0
+2.180     Uninstalling pip-24.0:
+2.328       Successfully uninstalled pip-24.0
+2.968 Successfully installed pip-25.0.1
+2.969 WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
+3.893 Obtaining file:///app
+3.897   Installing build dependencies: started
+5.784   Installing build dependencies: finished with status 'done'
+5.785   Checking if build backend supports build_editable: started
+6.128   Checking if build backend supports build_editable: finished with status 'done'
+6.129   Getting requirements to build editable: started
+6.486   Getting requirements to build editable: finished with status 'error'
+6.493   error: subprocess-exited-with-error
+6.493
+6.493   × Getting requirements to build editable did not run successfully.
+6.493   │ exit code: 1
+6.493   ╰─> [102 lines of output]
+6.493       /tmp/pip-build-env-_2d956ia/overlay/lib/python3.11/site-packages/setuptools/config/_apply_pyprojecttoml.py:75: _MissingDynamic: `readme` defined outside of `pyproject.toml` is ignored.
+6.493       !!
+6.493
+6.493               ********************************************************************************
+6.493               The following seems to be defined outside of `pyproject.toml`:
+6.493
+6.493               `readme = 'A Streamlit-powered educational video production automation tool'`
+6.493
+6.493               According to the spec (see the link below), however, setuptools CANNOT
+6.493               consider this value unless `readme` is listed as `dynamic`.
+6.493
+6.493               https://packaging.python.org/en/latest/specifications/pyproject-toml/#declaring-project-metadata-the-project-table
+6.493
+6.493               To prevent this problem, you can list `readme` under `dynamic` or alternatively
+6.493               remove the `[project]` table from your file and rely entirely on other means of
+6.493               configuration.
+6.493               ********************************************************************************
+6.493
+6.493       !!
+6.493         _handle_missing_dynamic(dist, project_table)
+6.493       /tmp/pip-build-env-_2d956ia/overlay/lib/python3.11/site-packages/setuptools/config/_apply_pyprojecttoml.py:75: _MissingDynamic: `classifiers` defined outside of `pyproject.toml` is ignored.
+6.493       !!
+6.493
+6.493               ********************************************************************************
+6.493               The following seems to be defined outside of `pyproject.toml`:
+6.493
+6.493               `classifiers = ['Programming Language :: Python :: 3', 'License :: OSI Approved :: MIT License', 'Operating System :: OS Independent']`
+6.493
+6.493               According to the spec (see the link below), however, setuptools CANNOT
+6.493               consider this value unless `classifiers` is listed as `dynamic`.
+6.493
+6.493               https://packaging.python.org/en/latest/specifications/pyproject-toml/#declaring-project-metadata-the-project-table
+6.493
+6.493               To prevent this problem, you can list `classifiers` under `dynamic` or alternatively
+6.493               remove the `[project]` table from your file and rely entirely on other means of
+6.493               configuration.
+6.493               ********************************************************************************
+6.493
+6.493       !!
+6.493         _handle_missing_dynamic(dist, project_table)
+6.493       /tmp/pip-build-env-_2d956ia/overlay/lib/python3.11/site-packages/setuptools/config/_apply_pyprojecttoml.py:75: _MissingDynamic: `scripts` defined outside of `pyproject.toml` is ignored.
+6.493       !!
+6.493
+6.493               ********************************************************************************
+6.493               The following seems to be defined outside of `pyproject.toml`:
+6.493
+6.493               `scripts = ['dreamlet=app:main']`
+6.493
+6.493               According to the spec (see the link below), however, setuptools CANNOT
+6.493               consider this value unless `scripts` is listed as `dynamic`.
+6.493
+6.493               https://packaging.python.org/en/latest/specifications/pyproject-toml/#declaring-project-metadata-the-project-table
+6.493
+6.493               To prevent this problem, you can list `scripts` under `dynamic` or alternatively
+6.493               remove the `[project]` table from your file and rely entirely on other means of
+6.493               configuration.
+6.493               ********************************************************************************
+6.493
+6.493       !!
+6.493         _handle_missing_dynamic(dist, project_table)
+6.493       /tmp/pip-build-env-_2d956ia/overlay/lib/python3.11/site-packages/setuptools/config/_apply_pyprojecttoml.py:82: SetuptoolsWarning: `install_requires` overwritten in `pyproject.toml` (dependencies)
+6.493         corresp(dist, value, root_dir)
+6.493       Traceback (most recent call last):
+6.493         File "/usr/local/lib/python3.11/site-packages/pip/_vendor/pyproject_hooks/_in_process/_in_process.py", line 389, in <module>      
+6.493           main()
+6.493         File "/usr/local/lib/python3.11/site-packages/pip/_vendor/pyproject_hooks/_in_process/_in_process.py", line 373, in main
+6.493           json_out["return_val"] = hook(**hook_input["kwargs"])
+6.493                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+6.493         File "/usr/local/lib/python3.11/site-packages/pip/_vendor/pyproject_hooks/_in_process/_in_process.py", line 157, in get_requires_for_build_editable
+6.493           return hook(config_settings)
+6.493                  ^^^^^^^^^^^^^^^^^^^^^
+6.493         File "/tmp/pip-build-env-_2d956ia/overlay/lib/python3.11/site-packages/setuptools/build_meta.py", line 483, in get_requires_for_build_editable
+6.493           return self.get_requires_for_build_wheel(config_settings)
+6.493                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+6.493         File "/tmp/pip-build-env-_2d956ia/overlay/lib/python3.11/site-packages/setuptools/build_meta.py", line 334, in get_requires_for_build_wheel
+6.493           return self._get_build_requires(config_settings, requirements=[])
+6.493                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+6.493         File "/tmp/pip-build-env-_2d956ia/overlay/lib/python3.11/site-packages/setuptools/build_meta.py", line 304, in _get_build_requires
+6.493           self.run_setup()
+6.493         File "/tmp/pip-build-env-_2d956ia/overlay/lib/python3.11/site-packages/setuptools/build_meta.py", line 522, in run_setup
+6.493           super().run_setup(setup_script=setup_script)
+6.493         File "/tmp/pip-build-env-_2d956ia/overlay/lib/python3.11/site-packages/setuptools/build_meta.py", line 320, in run_setup
+6.493           exec(code, locals())
+6.493         File "<string>", line 37, in <module>
+6.493         File "/tmp/pip-build-env-_2d956ia/overlay/lib/python3.11/site-packages/setuptools/__init__.py", line 117, in setup
+6.493           return distutils.core.setup(**attrs)
+6.493                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+6.493         File "/tmp/pip-build-env-_2d956ia/overlay/lib/python3.11/site-packages/setuptools/_distutils/core.py", line 160, in setup
+6.493           dist.parse_config_files()
+6.493         File "/tmp/pip-build-env-_2d956ia/overlay/lib/python3.11/site-packages/setuptools/dist.py", line 756, in parse_config_files       
+6.493           pyprojecttoml.apply_configuration(self, filename, ignore_option_errors)
+6.493         File "/tmp/pip-build-env-_2d956ia/overlay/lib/python3.11/site-packages/setuptools/config/pyprojecttoml.py", line 73, in apply_configuration
+6.493           return _apply(dist, config, filepath)
+6.493                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+6.493         File "/tmp/pip-build-env-_2d956ia/overlay/lib/python3.11/site-packages/setuptools/config/_apply_pyprojecttoml.py", line 54, in apply
+6.493           _apply_project_table(dist, config, root_dir)
+6.493         File "/tmp/pip-build-env-_2d956ia/overlay/lib/python3.11/site-packages/setuptools/config/_apply_pyprojecttoml.py", line 82, in _apply_project_table
+6.493           corresp(dist, value, root_dir)
+6.493         File "/tmp/pip-build-env-_2d956ia/overlay/lib/python3.11/site-packages/setuptools/config/_apply_pyprojecttoml.py", line 187, in _long_description
+6.493           file = val.get("file") or ()
+6.493                  ^^^^^^^
+6.493       AttributeError: 'NoneType' object has no attribute 'get'
+6.493       [end of output]
+6.493   
+6.493   note: This error originates from a subprocess, and is likely not a problem with pip.
+6.804 error: subprocess-exited-with-error
+6.804
+6.804 × Getting requirements to build editable did not run successfully.
+6.804 │ exit code: 1
+6.804 ╰─> See above for output.
+6.804
+6.804 note: This error originates from a subprocess, and is likely not a problem with pip.
+------
+
+ 1 warning found (use docker --debug to expand):
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "OPENAI_API_KEY") (line 63)
+Dockerfile:34
+--------------------
+  33 |     # Install Python dependencies
+  34 | >>> RUN pip install --no-cache-dir --upgrade pip && \
+  35 | >>>     pip install --no-cache-dir -e .
+  36 |
+--------------------
+ERROR: failed to solve: process "/bin/sh -c pip install --no-cache-dir --upgrade pip &&     pip install --no-cache-dir -e ." did not complete successfully: exit code: 1
+
+View build details: docker-desktop://dashboard/build/desktop-linux/desktop-linux/nqq2wi8ntpbysg4qtr9o2hzdr
+PS C:\Users\lallm\code\DreamletEduVideo> docker-compose build
+time="2025-04-14T21:37:18+05:30" level=warning msg="C:\\Users\\lallm\\code\\DreamletEduVideo\\docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+Compose can now delegate builds to bake for better performance.
+ To do so, set COMPOSE_BAKE=true.
+[+] Building 7.4s (9/16)                                                                                                   docker:desktop-linux
+ => [dreamlet internal] load build definition from Dockerfile                                                                              0.0s
+ => => transferring dockerfile: 2.30kB                                                                                                     0.0s 
+ => [dreamlet internal] load metadata for docker.io/library/python:3.11-slim                                                               0.8s 
+ => [dreamlet internal] load .dockerignore                                                                                                 0.0s
+ => => transferring context: 678B                                                                                                          0.0s 
+ => [dreamlet internal] load build context                                                                                                 0.0s 
+ => => transferring context: 3.24kB                                                                                                        0.0s 
+ => [dreamlet  1/12] FROM docker.io/library/python:3.11-slim@sha256:82c07f2f6e35255b92eb16f38dbd22679d5e8fb523064138d7c6468e7bf0c15b       0.0s 
+ => => resolve docker.io/library/python:3.11-slim@sha256:82c07f2f6e35255b92eb16f38dbd22679d5e8fb523064138d7c6468e7bf0c15b                  0.0s
+ => CACHED [dreamlet  2/12] WORKDIR /app                                                                                                   0.0s 
+ => CACHED [dreamlet  3/12] RUN apt-get update && apt-get install -y --no-install-recommends     ffmpeg     libsm6     libxext6     libxr  0.0s 
+ => CACHED [dreamlet  4/12] COPY pyproject.toml setup.py ./                                                                                0.0s 
+ => ERROR [dreamlet  5/12] RUN pip install --no-cache-dir --upgrade pip &&     pip install --no-cache-dir -e .                             6.6s 
+------
+ > [dreamlet  5/12] RUN pip install --no-cache-dir --upgrade pip &&     pip install --no-cache-dir -e .:
+1.194 Requirement already satisfied: pip in /usr/local/lib/python3.11/site-packages (24.0)
+1.508 Collecting pip
+1.588   Downloading pip-25.0.1-py3-none-any.whl.metadata (3.7 kB)
+1.613 Downloading pip-25.0.1-py3-none-any.whl (1.8 MB)
+1.730    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.8/1.8 MB 16.4 MB/s eta 0:00:00
+1.765 Installing collected packages: pip
+1.765   Attempting uninstall: pip
+1.766     Found existing installation: pip 24.0
+1.795     Uninstalling pip-24.0:
+1.878       Successfully uninstalled pip-24.0
+2.490 Successfully installed pip-25.0.1
+2.490 WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
+3.454 Obtaining file:///app
+3.457   Installing build dependencies: started
+5.329   Installing build dependencies: finished with status 'done'
+5.329   Checking if build backend supports build_editable: started
+5.684   Checking if build backend supports build_editable: finished with status 'done'
+5.685   Getting requirements to build editable: started
+6.057   Getting requirements to build editable: finished with status 'error'
+6.065   error: subprocess-exited-with-error
+6.065
+6.065   × Getting requirements to build editable did not run successfully.
+6.065   │ exit code: 1
+6.065   ╰─> [102 lines of output]
+6.065       /tmp/pip-build-env-l8aw6hv7/overlay/lib/python3.11/site-packages/setuptools/config/_apply_pyprojecttoml.py:75: _MissingDynamic: `readme` defined outside of `pyproject.toml` is ignored.
+6.065       !!
+6.065
+6.065               ********************************************************************************
+6.065               The following seems to be defined outside of `pyproject.toml`:
+6.065
+6.065               `readme = 'A Streamlit-powered educational video production automation tool'`
+6.065
+6.065               According to the spec (see the link below), however, setuptools CANNOT
+6.065               consider this value unless `readme` is listed as `dynamic`.
+6.065
+6.065               https://packaging.python.org/en/latest/specifications/pyproject-toml/#declaring-project-metadata-the-project-table
+6.065
+6.065               To prevent this problem, you can list `readme` under `dynamic` or alternatively
+6.065               remove the `[project]` table from your file and rely entirely on other means of
+6.065               configuration.
+6.065               ********************************************************************************
+6.065
+6.065       !!
+6.065         _handle_missing_dynamic(dist, project_table)
+6.065       /tmp/pip-build-env-l8aw6hv7/overlay/lib/python3.11/site-packages/setuptools/config/_apply_pyprojecttoml.py:75: _MissingDynamic: `classifiers` defined outside of `pyproject.toml` is ignored.
+6.065       !!
+6.065
+6.065               ********************************************************************************
+6.065               The following seems to be defined outside of `pyproject.toml`:
+6.065
+6.065               `classifiers = ['Programming Language :: Python :: 3', 'License :: OSI Approved :: MIT License', 'Operating System :: OS Independent']`
+6.065
+6.065               According to the spec (see the link below), however, setuptools CANNOT
+6.065               consider this value unless `classifiers` is listed as `dynamic`.
+6.065
+6.065               https://packaging.python.org/en/latest/specifications/pyproject-toml/#declaring-project-metadata-the-project-table
+6.065
+6.065               To prevent this problem, you can list `classifiers` under `dynamic` or alternatively
+6.065               remove the `[project]` table from your file and rely entirely on other means of
+6.065               configuration.
+6.065               ********************************************************************************
+6.065
+6.065       !!
+6.065         _handle_missing_dynamic(dist, project_table)
+6.065       /tmp/pip-build-env-l8aw6hv7/overlay/lib/python3.11/site-packages/setuptools/config/_apply_pyprojecttoml.py:75: _MissingDynamic: `scripts` defined outside of `pyproject.toml` is ignored.
+6.065       !!
+6.065
+6.065               ********************************************************************************
+6.065               The following seems to be defined outside of `pyproject.toml`:
+6.065
+6.065               `scripts = ['dreamlet=app:main']`
+6.065
+6.065               According to the spec (see the link below), however, setuptools CANNOT
+6.065               consider this value unless `scripts` is listed as `dynamic`.
+6.065
+6.065               https://packaging.python.org/en/latest/specifications/pyproject-toml/#declaring-project-metadata-the-project-table
+6.065
+6.065               To prevent this problem, you can list `scripts` under `dynamic` or alternatively
+6.065               remove the `[project]` table from your file and rely entirely on other means of
+6.065               configuration.
+6.065               ********************************************************************************
+6.065
+6.065       !!
+6.065         _handle_missing_dynamic(dist, project_table)
+6.065       /tmp/pip-build-env-l8aw6hv7/overlay/lib/python3.11/site-packages/setuptools/config/_apply_pyprojecttoml.py:82: SetuptoolsWarning: `install_requires` overwritten in `pyproject.toml` (dependencies)
+6.065         corresp(dist, value, root_dir)
+6.065       Traceback (most recent call last):
+6.065         File "/usr/local/lib/python3.11/site-packages/pip/_vendor/pyproject_hooks/_in_process/_in_process.py", line 389, in <module>      
+6.065           main()
+6.065         File "/usr/local/lib/python3.11/site-packages/pip/_vendor/pyproject_hooks/_in_process/_in_process.py", line 373, in main
+6.065           json_out["return_val"] = hook(**hook_input["kwargs"])
+6.065                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+6.065         File "/usr/local/lib/python3.11/site-packages/pip/_vendor/pyproject_hooks/_in_process/_in_process.py", line 157, in get_requires_for_build_editable
+6.065           return hook(config_settings)
+6.065                  ^^^^^^^^^^^^^^^^^^^^^
+6.065         File "/tmp/pip-build-env-l8aw6hv7/overlay/lib/python3.11/site-packages/setuptools/build_meta.py", line 483, in get_requires_for_build_editable
+6.065           return self.get_requires_for_build_wheel(config_settings)
+6.065                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+6.065         File "/tmp/pip-build-env-l8aw6hv7/overlay/lib/python3.11/site-packages/setuptools/build_meta.py", line 334, in get_requires_for_build_wheel
+6.065           return self._get_build_requires(config_settings, requirements=[])
+6.065                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+6.065         File "/tmp/pip-build-env-l8aw6hv7/overlay/lib/python3.11/site-packages/setuptools/build_meta.py", line 304, in _get_build_requires
+6.065           self.run_setup()
+6.065         File "/tmp/pip-build-env-l8aw6hv7/overlay/lib/python3.11/site-packages/setuptools/build_meta.py", line 522, in run_setup
+6.065           super().run_setup(setup_script=setup_script)
+6.065         File "/tmp/pip-build-env-l8aw6hv7/overlay/lib/python3.11/site-packages/setuptools/build_meta.py", line 320, in run_setup
+6.065           exec(code, locals())
+6.065         File "<string>", line 37, in <module>
+6.065         File "/tmp/pip-build-env-l8aw6hv7/overlay/lib/python3.11/site-packages/setuptools/__init__.py", line 117, in setup
+6.065           return distutils.core.setup(**attrs)
+6.065                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+6.065         File "/tmp/pip-build-env-l8aw6hv7/overlay/lib/python3.11/site-packages/setuptools/_distutils/core.py", line 160, in setup
+6.065           dist.parse_config_files()
+6.065         File "/tmp/pip-build-env-l8aw6hv7/overlay/lib/python3.11/site-packages/setuptools/dist.py", line 756, in parse_config_files       
+6.065           pyprojecttoml.apply_configuration(self, filename, ignore_option_errors)
+6.065         File "/tmp/pip-build-env-l8aw6hv7/overlay/lib/python3.11/site-packages/setuptools/config/pyprojecttoml.py", line 73, in apply_configuration
+6.065           return _apply(dist, config, filepath)
+6.065                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+6.065         File "/tmp/pip-build-env-l8aw6hv7/overlay/lib/python3.11/site-packages/setuptools/config/_apply_pyprojecttoml.py", line 54, in apply
+6.065           _apply_project_table(dist, config, root_dir)
+6.065         File "/tmp/pip-build-env-l8aw6hv7/overlay/lib/python3.11/site-packages/setuptools/config/_apply_pyprojecttoml.py", line 82, in _apply_project_table
+6.065           corresp(dist, value, root_dir)
+6.065         File "/tmp/pip-build-env-l8aw6hv7/overlay/lib/python3.11/site-packages/setuptools/config/_apply_pyprojecttoml.py", line 187, in _long_description
+6.065           file = val.get("file") or ()
+6.065                  ^^^^^^^
+6.065       AttributeError: 'NoneType' object has no attribute 'get'
+6.065       [end of output]
+6.065
+6.065   note: This error originates from a subprocess, and is likely not a problem with pip.
+6.486 error: subprocess-exited-with-error
+6.486
+6.486 × Getting requirements to build editable did not run successfully.
+6.486 │ exit code: 1
+6.486 ╰─> See above for output.
+6.486
+6.486 note: This error originates from a subprocess, and is likely not a problem with pip.
+------
+failed to solve: process "/bin/sh -c pip install --no-cache-dir --upgrade pip &&     pip install --no-cache-dir -e ." did not complete successfully: exit code: 1
+PS C:\Users\lallm\code\DreamletEduVideo> docker run -p 5000:5000 -v "$(pwd)/input:/app/input" -v "$(pwd)/output:/app/output" dreamlet-production-system
+Unable to find image 'dreamlet-production-system:latest' locally
+docker: Error response from daemon: pull access denied for dreamlet-production-system, repository does not exist or may require 'docker login'
+
+Run 'docker run --help' for more information
+PS C:\Users\lallm\code\DreamletEduVideo>docker-compose up
+time="2025-04-14T21:37:40+05:30" level=warning msg="C:\\Users\\lallm\\code\\DreamletEduVideo\\docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+[+] Running 1/1
+ ! dreamlet Warning pull access denied for dreamlet-production-system, repository does not exist or may require 'dock...2.0s 
+Compose can now delegate builds to bake for better performance.
+ To do so, set COMPOSE_BAKE=true.
+[+] Building 7.3s (9/16)                                                                                                   docker:desktop-linux
+ => [dreamlet internal] load build definition from Dockerfile                                                                              0.0s
+ => => transferring dockerfile: 2.30kB                                                                                                     0.0s 
+ => [dreamlet internal] load metadata for docker.io/library/python:3.11-slim                                                               1.0s 
+ => [dreamlet internal] load .dockerignore                                                                                                 0.0s
+ => => transferring context: 678B                                                                                                          0.0s 
+ => [dreamlet internal] load build context                                                                                                 0.0s 
+ => => transferring context: 3.24kB                                                                                                        0.0s 
+ => [dreamlet  1/12] FROM docker.io/library/python:3.11-slim@sha256:82c07f2f6e35255b92eb16f38dbd22679d5e8fb523064138d7c6468e7bf0c15b       0.0s 
+ => => resolve docker.io/library/python:3.11-slim@sha256:82c07f2f6e35255b92eb16f38dbd22679d5e8fb523064138d7c6468e7bf0c15b                  0.0s
+ => CACHED [dreamlet  2/12] WORKDIR /app                                                                                                   0.0s 
+ => CACHED [dreamlet  3/12] RUN apt-get update && apt-get install -y --no-install-recommends     ffmpeg     libsm6     libxext6     libxr  0.0s 
+ => CACHED [dreamlet  4/12] COPY pyproject.toml setup.py ./                                                                                0.0s 
+ => ERROR [dreamlet  5/12] RUN pip install --no-cache-dir --upgrade pip &&     pip install --no-cache-dir -e .                             6.2s 
+------
+ > [dreamlet  5/12] RUN pip install --no-cache-dir --upgrade pip &&     pip install --no-cache-dir -e .:
+1.165 Requirement already satisfied: pip in /usr/local/lib/python3.11/site-packages (24.0)
+1.473 Collecting pip
+1.558   Downloading pip-25.0.1-py3-none-any.whl.metadata (3.7 kB)
+1.580 Downloading pip-25.0.1-py3-none-any.whl (1.8 MB)
+1.686    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.8/1.8 MB 18.1 MB/s eta 0:00:00
+1.722 Installing collected packages: pip
+1.722   Attempting uninstall: pip
+1.724     Found existing installation: pip 24.0
+1.752     Uninstalling pip-24.0:
+1.832       Successfully uninstalled pip-24.0
+2.449 WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
+2.449 Successfully installed pip-25.0.1
+3.367 Obtaining file:///app
+3.371   Installing build dependencies: started
+5.144   Installing build dependencies: finished with status 'done'
+5.145   Checking if build backend supports build_editable: started
+5.495   Checking if build backend supports build_editable: finished with status 'done'
+5.497   Getting requirements to build editable: started
+5.852   Getting requirements to build editable: finished with status 'error'
+5.859   error: subprocess-exited-with-error
+5.859
+5.859   × Getting requirements to build editable did not run successfully.
+5.859   │ exit code: 1
+5.859   ╰─> [102 lines of output]
+5.859       /tmp/pip-build-env-m55rbnny/overlay/lib/python3.11/site-packages/setuptools/config/_apply_pyprojecttoml.py:75: _MissingDynamic: `readme` defined outside of `pyproject.toml` is ignored.
+5.859       !!
+5.859
+5.859               ********************************************************************************
+5.859               The following seems to be defined outside of `pyproject.toml`:
+5.859
+5.859               `readme = 'A Streamlit-powered educational video production automation tool'`
+5.859
+5.859               According to the spec (see the link below), however, setuptools CANNOT
+5.859               consider this value unless `readme` is listed as `dynamic`.
+5.859
+5.859               https://packaging.python.org/en/latest/specifications/pyproject-toml/#declaring-project-metadata-the-project-table
+5.859
+5.859               To prevent this problem, you can list `readme` under `dynamic` or alternatively
+5.859               remove the `[project]` table from your file and rely entirely on other means of
+5.859               configuration.
+5.859               ********************************************************************************
+5.859
+5.859       !!
+5.859         _handle_missing_dynamic(dist, project_table)
+5.859       /tmp/pip-build-env-m55rbnny/overlay/lib/python3.11/site-packages/setuptools/config/_apply_pyprojecttoml.py:75: _MissingDynamic: `classifiers` defined outside of `pyproject.toml` is ignored.
+5.859       !!
+5.859
+5.859               ********************************************************************************
+5.859               The following seems to be defined outside of `pyproject.toml`:
+5.859
+5.859               `classifiers = ['Programming Language :: Python :: 3', 'License :: OSI Approved :: MIT License', 'Operating System :: OS Independent']`
+5.859
+5.859               According to the spec (see the link below), however, setuptools CANNOT
+5.859               consider this value unless `classifiers` is listed as `dynamic`.
+5.859
+5.859               https://packaging.python.org/en/latest/specifications/pyproject-toml/#declaring-project-metadata-the-project-table
+5.859
+5.859               To prevent this problem, you can list `classifiers` under `dynamic` or alternatively
+5.859               remove the `[project]` table from your file and rely entirely on other means of
+5.859               configuration.
+5.859               ********************************************************************************
+5.859
+5.859       !!
+5.859         _handle_missing_dynamic(dist, project_table)
+5.859       /tmp/pip-build-env-m55rbnny/overlay/lib/python3.11/site-packages/setuptools/config/_apply_pyprojecttoml.py:75: _MissingDynamic: `scripts` defined outside of `pyproject.toml` is ignored.
+5.859       !!
+5.859
+5.859               ********************************************************************************
+5.859               The following seems to be defined outside of `pyproject.toml`:
+5.859
+5.859               `scripts = ['dreamlet=app:main']`
+5.859
+5.859               According to the spec (see the link below), however, setuptools CANNOT
+5.859               consider this value unless `scripts` is listed as `dynamic`.
+5.859
+5.859               https://packaging.python.org/en/latest/specifications/pyproject-toml/#declaring-project-metadata-the-project-table
+5.859
+5.859               To prevent this problem, you can list `scripts` under `dynamic` or alternatively
+5.859               remove the `[project]` table from your file and rely entirely on other means of
+5.859               configuration.
+5.859               ********************************************************************************
+5.859
+5.859       !!
+5.859         _handle_missing_dynamic(dist, project_table)
+5.859       /tmp/pip-build-env-m55rbnny/overlay/lib/python3.11/site-packages/setuptools/config/_apply_pyprojecttoml.py:82: SetuptoolsWarning: `install_requires` overwritten in `pyproject.toml` (dependencies)
+5.859         corresp(dist, value, root_dir)
+5.859       Traceback (most recent call last):
+5.859         File "/usr/local/lib/python3.11/site-packages/pip/_vendor/pyproject_hooks/_in_process/_in_process.py", line 389, in <module>      
+5.859           main()
+5.859         File "/usr/local/lib/python3.11/site-packages/pip/_vendor/pyproject_hooks/_in_process/_in_process.py", line 373, in main
+5.859           json_out["return_val"] = hook(**hook_input["kwargs"])
+5.859                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5.859         File "/usr/local/lib/python3.11/site-packages/pip/_vendor/pyproject_hooks/_in_process/_in_process.py", line 157, in get_requires_for_build_editable
+5.859           return hook(config_settings)
+5.859                  ^^^^^^^^^^^^^^^^^^^^^
+5.859         File "/tmp/pip-build-env-m55rbnny/overlay/lib/python3.11/site-packages/setuptools/build_meta.py", line 483, in get_requires_for_build_editable
+5.859           return self.get_requires_for_build_wheel(config_settings)
+5.859                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5.859         File "/tmp/pip-build-env-m55rbnny/overlay/lib/python3.11/site-packages/setuptools/build_meta.py", line 334, in get_requires_for_build_wheel
+5.859           return self._get_build_requires(config_settings, requirements=[])
+5.859                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5.859         File "/tmp/pip-build-env-m55rbnny/overlay/lib/python3.11/site-packages/setuptools/build_meta.py", line 304, in _get_build_requires
+5.859           self.run_setup()
+5.859         File "/tmp/pip-build-env-m55rbnny/overlay/lib/python3.11/site-packages/setuptools/build_meta.py", line 522, in run_setup
+5.859           super().run_setup(setup_script=setup_script)
+5.859         File "/tmp/pip-build-env-m55rbnny/overlay/lib/python3.11/site-packages/setuptools/build_meta.py", line 320, in run_setup
+5.859           exec(code, locals())
+5.859         File "<string>", line 37, in <module>
+5.859         File "/tmp/pip-build-env-m55rbnny/overlay/lib/python3.11/site-packages/setuptools/__init__.py", line 117, in setup
+5.859           return distutils.core.setup(**attrs)
+5.859                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5.859         File "/tmp/pip-build-env-m55rbnny/overlay/lib/python3.11/site-packages/setuptools/_distutils/core.py", line 160, in setup
+5.859           dist.parse_config_files()
+5.859         File "/tmp/pip-build-env-m55rbnny/overlay/lib/python3.11/site-packages/setuptools/dist.py", line 756, in parse_config_files       
+5.859           pyprojecttoml.apply_configuration(self, filename, ignore_option_errors)
+5.859         File "/tmp/pip-build-env-m55rbnny/overlay/lib/python3.11/site-packages/setuptools/config/pyprojecttoml.py", line 73, in apply_configuration
+5.859           return _apply(dist, config, filepath)
+5.859                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5.859         File "/tmp/pip-build-env-m55rbnny/overlay/lib/python3.11/site-packages/setuptools/config/_apply_pyprojecttoml.py", line 54, in apply
+5.859           _apply_project_table(dist, config, root_dir)
+5.859         File "/tmp/pip-build-env-m55rbnny/overlay/lib/python3.11/site-packages/setuptools/config/_apply_pyprojecttoml.py", line 82, in _apply_project_table
+5.859           corresp(dist, value, root_dir)
+5.859         File "/tmp/pip-build-env-m55rbnny/overlay/lib/python3.11/site-packages/setuptools/config/_apply_pyprojecttoml.py", line 187, in _long_description
+5.859           file = val.get("file") or ()
+5.859                  ^^^^^^^
+5.859       AttributeError: 'NoneType' object has no attribute 'get'
+5.859       [end of output]
+5.859
+5.859   note: This error originates from a subprocess, and is likely not a problem with pip.
+6.147 error: subprocess-exited-with-error
+6.147
+6.147 × Getting requirements to build editable did not run successfully.
+6.147 │ exit code: 1
+6.147 ╰─> See above for output.
+6.147
+6.147 note: This error originates from a subprocess, and is likely not a problem with pip.
+------
+failed to solve: process "/bin/sh -c pip install --no-cache-dir --upgrade pip &&     pip install --no-cache-dir -e ." did not complete successfully: exit code: 1
+PS C:\Users\lallm\code\DreamletEduVideo>

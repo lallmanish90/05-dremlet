@@ -1,0 +1,85 @@
+Based on my analysis of the existing codebase and renaming patterns, here's my comprehensive assessment of how the files shown in your screenshots should be renamed:
+
+File Renaming Analysis Table
+Current Filename	Recommended New Name	Reasoning	Action
+Image 1 Files			
+lecture_06_outline.md	DELETE	Outline files are not part of the standard 3-file structure (transcript, slides, summary)	Remove
+lecture_32_summary.md	32-summary.md	Follows summary naming pattern	Rename
+lecture_32_transcript.md	Lecture 32.md	Follows transcript naming pattern	Rename
+lecture_42_video_transcript_summary.md	DELETE or Split	Hybrid file type not supported in current system	Remove/Split
+lecture_42_video_transcript.md	Lecture 42.md	Follows transcript naming pattern	Rename
+lecture14_outline.md	DELETE	Outline files not part of standard structure	Remove
+lecture15_transcript_summary.md	DELETE or Split	Hybrid file type not supported	Remove/Split
+slide_content_28.md	28-slides.md	Follows slide content naming pattern	Rename
+slide_content_40.md	40-slides.md	Follows slide content naming pattern	Rename
+slide_content_62.md	62-slides.md	Follows slide content naming pattern	Rename
+| Image 2 Files | | | |
+| video_transcript_summary.md | DELETE | Generic name without lecture number, unsupported hybrid type | Remove |
+| video_transcript.md | DELETE | Generic name without lecture number | Remove |
+
+| Image 3 Files | | | |
+| artifact_b_transcript (1).md | DELETE | Duplicate indicator "(1)" suggests conflict, unclear lecture number | Remove |
+| artifact_b_transcript (2).md | DELETE | Duplicate indicator "(2)" suggests conflict, unclear lecture number | Remove |
+| artifact_b_transcript.md | DELETE | No clear lecture number extractable | Remove |
+| artifact_d_summary (1).md | DELETE | Duplicate indicator "(1)" suggests conflict, unclear lecture number | Remove |
+| artifact_d_summary (2).md | DELETE | Duplicate indicator "(2)" suggests conflict, unclear lecture number | Remove |
+| artifact_d_summary.md | DELETE | No clear lecture number extractable | Remove |
+| video_transcript (1).md | DELETE | Generic name with duplicate indicator | Remove |
+| video_transcript (2).md | DELETE | Generic name with duplicate indicator | Remove |
+| video_transcript_summary (1).md | DELETE | Generic name with duplicate indicator, hybrid type | Remove |
+| video_transcript_summary (2).md | DELETE | Generic name with duplicate indicator, hybrid type | Remove |
+| video_transcript_summary.md | DELETE | Generic name without lecture number, hybrid type | Remove |
+| video_transcript.md | DELETE | Generic name without lecture number | Remove |
+
+| Image 4 Files | | | |
+| artifact_b_transcript.md | DELETE | No clear lecture number extractable | Remove |
+| artifact_d_summary.md | DELETE | No clear lecture number extractable | Remove |
+| video_transcript_summary.md | DELETE | Generic name, hybrid type | Remove |
+| video_transcript.md | DELETE | Generic name without lecture number | Remove |
+
+| Image 5 Files | | | |
+| 08-slides.md | 08-slides.md | Already correctly named | No change |
+| Lecture 07.md | Lecture 07.md | Already correctly named | No change |
+| Lecture 08.md | Lecture 08.md | Already correctly named | No change |
+| Lecture 09.md | Lecture 09.md | Already correctly named | No change |
+
+| Image 6 Files | | | |
+| 16-artifact-a.md | DELETE | "artifact-a" type not part of standard structure | Remove |
+| 52artifact-b.md | Lecture 52.md | Extract lecture 52, convert artifact-b to transcript | Rename |
+
+| Image 7 Files | | | |
+| 3-c.md | 03-slides.md | "c" typically represents slides, standardize number | Rename |
+
+| Image 8 Files | | | |
+| video_transcript 40.txt | Lecture 40.txt | Extract lecture number 40, convert to transcript format | Rename |
+| video_transcript_summary 40.txt | 40-summary.txt | Extract lecture number 40, convert hybrid to summary | Rename |
+
+| Image 9 Files | | | |
+| 17-artifact_d_summary.md | 17-summary.md | Extract lecture 17, convert artifact_d to summary | Rename |
+| artifact_25_summary.md | 25-summary.md | Extract lecture 25, convert to summary format | Rename |
+| artifact_25_transcript.md | Lecture 25.md | Extract lecture 25, convert to transcript format | Rename |
+| artifact_32_summary.md | 32-summary.md | Extract lecture 32, convert to summary format | Rename |
+| artifact_32_transcript.md | Lecture 32.md | Extract lecture 32, convert to transcript format | Rename |
+| artifact_35_summary.md | 35-summary.md | Extract lecture 35, convert to summary format | Rename |
+| artifact_35_transcript.md | Lecture 35.md | Extract lecture 35, convert to transcript format | Rename |
+
+| Image 10 Files | | | |
+| artifact_b_transcript.md | DELETE | No clear lecture number extractable | Remove |
+| artifact_d_summary.md | DELETE | No clear lecture number extractable | Remove |
+| video_transcript_summary.md | DELETE | Generic name, hybrid type | Remove |
+| video_transcript.md | DELETE | Generic name without lecture number | Remove |
+
+Key Observations:
+Standard Structure: The system expects 3 types of files per lecture:
+
+Lecture XX.md (transcripts)
+XX-slides.md (slide content)
+XX-summary.md (summaries)
+Files to Delete: Any file without a clear lecture number or with unsupported types (outlines, hybrid transcript-summaries, artifacts without numbers, duplicates with "(1)", "(2)" indicators) should be deleted.
+
+Renaming Patterns:
+
+artifact_X_transcript → Lecture X
+artifact_X_summary → X-summary
+slide_content_X → X-slides
+video_transcript X → Lecture X

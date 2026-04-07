@@ -1,0 +1,45 @@
+{
+  "started_at": "2025-09-01T15:03:38.306827",
+  "workflow_id": "workflow_1756719218",
+  "total_steps": 3,
+  "completed_steps": 3,
+  "failed_steps": 0,
+  "step_results": [
+    {
+      "step_id": "01_adjust",
+      "step_name": "Adjust AAA EEE",
+      "success": true,
+      "message": "Step 01_adjust executed successfully",
+      "data": {
+        "processed": 0,
+        "created": 0
+      },
+      "timestamp": "2025-09-01T15:03:38.314597"
+    },
+    {
+      "step_id": "02_rename",
+      "step_name": "Rename Files",
+      "success": true,
+      "message": "Step 02_rename executed successfully",
+      "data": {
+        "renamed": 0,
+        "deleted": 0
+      },
+      "timestamp": "2025-09-01T15:03:38.827275"
+    },
+    {
+      "step_id": "03_save_text",
+      "step_name": "Save Text Sections",
+      "success": true,
+      "message": "Step 03_save_text executed successfully",
+      "data": {
+        "transcript_sections": 0,
+        "summary_sections": 0
+      },
+      "timestamp": "2025-09-01T15:03:39.341035"
+    }
+  ],
+  "overall_success": true,
+  "completed_at": "2025-09-01T15:03:39.867557",
+  "total_duration": 1
+}

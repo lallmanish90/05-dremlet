@@ -1,0 +1,55 @@
+[project]
+name = "dreamlet-video-production"
+version = "1.0.0"
+description = "Dreamlet Educational Video Production System - CLI and Streamlit interfaces"
+requires-python = ">=3.11"
+dependencies = [
+    # Core processing dependencies
+    "ffmpeg-python>=0.2.0",
+    "numpy>=2.2.4",
+    "openai>=1.72.0",
+    "opencv-python-headless>=4.11.0.86",
+    "opencv-python>=4.11.0.86",
+    "pillow>=11.1.0",
+    "python-docx>=1.1.2",
+    "python-pptx>=1.0.2",
+    "setuptools>=78.1.0",
+    "pdf2image>=1.17.0",
+    "psutil>=7.0.0",
+    "anthropic>=0.50.0",
+    "requests>=2.32.3",
+    "pandas>=2.2.3",
+    
+    # Streamlit interface (optional)
+    "streamlit>=1.44.1",
+    
+    # CLI interface dependencies
+    "click>=8.1.0",
+    "rich>=13.0.0",
+    "questionary>=2.0.0",
+    "pyyaml>=6.0.0",
+    "colorama>=0.4.6",
+]
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+]
+
+# System dependencies note:
+# This project requires several system-level dependencies:
+# - FFmpeg (for video/audio processing)
+# - Poppler utils (for PDF processing) 
+# - Image processing libraries (libjpeg, libwebp, libtiff, etc.)
+# - LibreOffice (for office document processing)
+# See README.md for complete installation instructions
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["*"]
+exclude = ["tests*", "*.tests*"]

@@ -1,0 +1,42 @@
+Final File Renaming Analysis Table
+Image	Current Filename	Recommended New Name	Reasoning	Action
+Image 1	lecture_06_outline.md	–	Outline files not part of standard 3-file structure	DELETE
+lecture_32_summary.md	32-summary.md	Follows summary naming pattern	Rename
+lecture_32_transcript.md	Lecture 32.md	Follows transcript naming pattern	Rename
+lecture_42_video_transcript_summary.md	–	Hybrid file type not supported	DELETE
+lecture_42_video_transcript.md	Lecture 42.md	Follows transcript naming pattern	Rename
+lecture14_outline.md	–	Outline files not part of standard structure	DELETE
+lecture15_transcript_summary.md	–	Hybrid file type not supported	DELETE
+slide_content_28.md	28-slides.md	Follows slide content naming pattern	Rename
+slide_content_40.md	40-slides.md	Follows slide content naming pattern	Rename
+slide_content_62.md	62-slides.md	Follows slide content naming pattern	Rename
+Image 2	video_transcript_summary.md	–	Generic name, no lecture number, hybrid type	DELETE
+video_transcript.md	–	Generic name without lecture number	DELETE
+Image 3	artifact_b_transcript.md	–	No clear lecture number extractable	DELETE
+artifact_d_summary.md	–	No clear lecture number extractable	DELETE
+video_transcript.md	–	Generic name without lecture number	DELETE
+video_transcript_summary.md	–	Generic name, hybrid type	DELETE
+Image 4	artifact_b_transcript.md	–	No clear lecture number extractable	DELETE
+artifact_d_summary.md	–	No clear lecture number extractable	DELETE
+video_transcript_summary.md	–	Generic name, hybrid type	DELETE
+video_transcript.md	–	Generic name without lecture number	DELETE
+Image 5	08-slides.md	08-slides.md	Already correctly named	No change
+Lecture 07.md	Lecture 07.md	Already correctly named	No change
+Lecture 08.md	Lecture 08.md	Already correctly named	No change
+Lecture 09.md	Lecture 09.md	Already correctly named	No change
+Image 6	16-artifact-a.md	–	"artifact-a" type not part of standard structure	DELETE
+52artifact-b.md	Lecture 52.md	Extract lecture 52, convert artifact-b to transcript	Rename
+Image 7	3-c.md	03-slides.md	"c" typically represents slides; standardize number	Rename
+Image 8	video_transcript 40.txt	Lecture 40.txt	Extract lecture number 40, convert to transcript format	Rename
+video_transcript_summary 40.txt	40-summary.txt	Extract lecture number 40, convert hybrid to summary	Rename
+Image 9	17-artifact_d_summary.md	17-summary.md	Extract lecture 17, convert to summary format	Rename
+artifact_25_summary.md	25-summary.md	Extract lecture 25, convert to summary format	Rename
+artifact_25_transcript.md	Lecture 25.md	Extract lecture 25, convert to transcript format	Rename
+artifact_32_summary.md	32-summary.md	Extract lecture 32, convert to summary format	Rename
+artifact_32_transcript.md	Lecture 32.md	Extract lecture 32, convert to transcript format	Rename
+artifact_35_summary.md	35-summary.md	Extract lecture 35, convert to summary format	Rename
+artifact_35_transcript.md	Lecture 35.md	Extract lecture 35, convert to transcript format	Rename
+Image 10	artifact_b_transcript.md	–	No clear lecture number extractable	DELETE
+artifact_d_summary.md	–	No clear lecture number extractable	DELETE
+video_transcript_summary.md	–	Generic name, hybrid type	DELETE
+video_transcript.md	–	Generic name without lecture number	DELETE

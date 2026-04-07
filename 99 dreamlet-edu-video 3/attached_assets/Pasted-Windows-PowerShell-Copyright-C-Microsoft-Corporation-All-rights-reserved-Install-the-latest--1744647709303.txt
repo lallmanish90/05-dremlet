@@ -1,0 +1,108 @@
+Windows PowerShell
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+Install the latest PowerShell for new features and improvements! https://aka.ms/PSWindows
+
+PS C:\Users\lallm> # First make sure you're in the project directory
+>> cd C:\Users\lallm\code\DreamletEduVideo
+PS C:\Users\lallm\code\DreamletEduVideo> volumes:
+>>   - C:/Users/lallm/code/DreamletEduVideo/input:/app/input
+>>   - C:/Users/lallm/code/DreamletEduVideo/output:/app/output
+At line:2 char:4
++   - C:/Users/lallm/code/DreamletEduVideo/input:/app/input
++    ~              
+Missing expression after unary operator '-'.
+At line:2 char:5
++   - C:/Users/lallm/code/DreamletEduVideo/input:/app/input
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Unexpected token 'C:/Users/lallm/code/DreamletEduVideo/input:/app/input' in expression or statement.
+At line:3 char:4
++   - C:/Users/lallm/code/DreamletEduVideo/output:/app/output
++    ~
+Missing expression after unary operator '-'.
+At line:3 char:5
++   - C:/Users/lallm/code/DreamletEduVideo/output:/app/output
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Unexpected token 'C:/Users/lallm/code/DreamletEduVideo/output:/app/output' in expression or statement.
+    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : MissingExpressionAfterOperator
+
+PS C:\Users\lallm\code\DreamletEduVideo> volumes:
+>>   - C:/Users/lallm/code/DreamletEduVideo/input:/app/input
+>>   - C:/Users/lallm/code/DreamletEduVideo/output:/app/output
+At line:2 char:4
++   - C:/Users/lallm/code/DreamletEduVideo/input:/app/input
++    ~
+Missing expression after unary operator '-'.
+At line:2 char:5
++   - C:/Users/lallm/code/DreamletEduVideo/input:/app/input
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Unexpected token 'C:/Users/lallm/code/DreamletEduVideo/input:/app/input' in expression or statement.
+At line:3 char:4
++   - C:/Users/lallm/code/DreamletEduVideo/output:/app/output
++    ~
+Missing expression after unary operator '-'.
+At line:3 char:5
++   - C:/Users/lallm/code/DreamletEduVideo/output:/app/output
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Unexpected token 'C:/Users/lallm/code/DreamletEduVideo/output:/app/output' in expression or statement.
+    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : MissingExpressionAfterOperator
+
+PS C:\Users\lallm\code\DreamletEduVideo># First make sure you're in the project directory
+>> cd C:\Users\lallm\code\DreamletEduVideo
+>>
+>> # Build the updated Docker image
+>> docker-compose build
+>>
+>> # Run the container
+>> docker-compose up
+time="2025-04-14T21:51:04+05:30" level=warning msg="C:\\Users\\lallm\\code\\DreamletEduVideo\\docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+Compose can now delegate builds to bake for better performance.
+ To do so, set COMPOSE_BAKE=true.
+[+] Building 2.1s (17/17) FINISHED                                                                                         docker:desktop-linux
+ => [dreamlet internal] load build definition from Dockerfile                                                                              0.0s
+ => => transferring dockerfile: 2.56kB                                                                                                     0.0s 
+ => [dreamlet internal] load metadata for docker.io/library/python:3.11-slim                                                               1.9s 
+ => [dreamlet internal] load .dockerignore                                                                                                 0.0s
+ => => transferring context: 678B                                                                                                          0.0s 
+ => [dreamlet  1/11] FROM docker.io/library/python:3.11-slim@sha256:82c07f2f6e35255b92eb16f38dbd22679d5e8fb523064138d7c6468e7bf0c15b       0.0s 
+ => => resolve docker.io/library/python:3.11-slim@sha256:82c07f2f6e35255b92eb16f38dbd22679d5e8fb523064138d7c6468e7bf0c15b                  0.0s 
+ => [dreamlet internal] load build context                                                                                                 0.0s 
+ => => transferring context: 3.49kB                                                                                                        0.0s
+ => CACHED [dreamlet  2/11] WORKDIR /app                                                                                                   0.0s 
+ => CACHED [dreamlet  3/11] RUN apt-get update && apt-get install -y --no-install-recommends     ffmpeg     libsm6     libxext6     libxr  0.0s 
+ => CACHED [dreamlet  4/11] RUN pip install --no-cache-dir --upgrade pip &&     pip install --no-cache-dir     ffmpeg-python==0.2.0     n  0.0s 
+ => CACHED [dreamlet  5/11] RUN mkdir -p input output .streamlit input/voices                                                              0.0s 
+ => CACHED [dreamlet  6/11] RUN mkdir -p .streamlit &&     echo "[server]" > .streamlit/config.toml &&     echo "headless = true" >> .str  0.0s 
+ => CACHED [dreamlet  7/11] COPY app.py ./                                                                                                 0.0s 
+ => CACHED [dreamlet  8/11] COPY pages/ ./pages/                                                                                           0.0s 
+ => CACHED [dreamlet  9/11] COPY utils/ ./utils/                                                                                           0.0s 
+ => CACHED [dreamlet 10/11] COPY attached_assets/ ./attached_assets/                                                                       0.0s 
+ => CACHED [dreamlet 11/11] RUN chmod -R 755 .                                                                                             0.0s 
+ => [dreamlet] exporting to image                                                                                                          0.1s 
+ => => exporting layers                                                                                                                    0.0s 
+ => => exporting manifest sha256:f03435dcab2d67571510d153a5b20c5c20e8f3eab30cd1f81d23224eff2ee25f                                          0.0s 
+ => => exporting config sha256:2af2578745c2575da927aa63a163e280dd011eb6e2786d94551b1bcd3f7d8ab5                                            0.0s 
+ => => exporting attestation manifest sha256:444b9d2efb1462fa150323957cfdb2545f0e7fd381e2d94768db42f9b950bd86                              0.0s 
+ => => exporting manifest list sha256:68d7d98bc81364ec6800411fc365bb40475c8258e75bd0911421ec404eedc134                                     0.0s 
+ => => naming to docker.io/library/dreamlet-production-system:latest                                                                       0.0s 
+ => => unpacking to docker.io/library/dreamlet-production-system:latest                                                                    0.0s 
+ => [dreamlet] resolving provenance for metadata file                                                                                      0.0s 
+[+] Building 1/1
+ ✔ dreamlet  Built0.0s 
+time="2025-04-14T21:51:06+05:30" level=warning msg="C:\\Users\\lallm\\code\\DreamletEduVideo\\docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+[+] Running 1/1
+ ✔ Container dreamlet-app  Recreated0.6s 
+Attaching to dreamlet-app
+dreamlet-app  |
+dreamlet-app  | Collecting usage statistics. To deactivate, set browser.gatherUsageStats to false.
+dreamlet-app  |
+dreamlet-app  |
+dreamlet-app  |   You can now view your Streamlit app in your browser.
+dreamlet-app  |
+dreamlet-app  |   URL: http://0.0.0.0:5000
+dreamlet-app  |
+
+
+v View in Docker Desktop   o View Config   w Enable Watch

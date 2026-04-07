@@ -1,0 +1,72 @@
+Sure! Here's a **generic set of renaming rules** that captures the pattern behind all your examples. The goal is to cover all similar cases, no matter the number or file type, and produce consistent naming across different naming conventions.
+
+---
+
+### ✅ **Generic Renaming Rules**
+
+We'll break this into **two main categories** based on the final desired format:
+- `NN-slides.md` or `NN-slides.txt` (for slide files)
+- `Lecture NN.md` or `Lecture NN.txt` (for transcript or lecture notes)
+
+---
+
+### 🧩 **Category A: Slide Files → `NN-slides.{md|txt}`**
+
+**Match and rename these patterns:**
+```plaintext
+1. (\d+)[-_]?(s|slide|slides)(-content)?\.(md|txt)
+   → {zero-padded NN}-slides.{md|txt}
+
+2. lec(\d+)-slides\.(md|txt)
+   → {zero-padded NN}-slides.{md|txt}
+
+3. lecture(\d+)[-_]?(slides?|slide-content)?\.(md|txt)
+   → {zero-padded NN}-slides.{md|txt}
+```
+
+**Examples:**
+- `1-slide.md` → `01-slides.md`
+- `27-s.txt` → `27-slides.txt`
+- `lecture16-slide-content.txt` → `16-slides.txt`
+- `lec23-slides.md` → `23-slides.md`
+
+---
+
+### 🧩 **Category B: Transcript/Lecture Files → `Lecture NN.{md|txt}`**
+
+**Match and rename these patterns:**
+```plaintext
+4. lecture[-_]?(\d+)[-_]?transcript\.(md|txt)
+   → Lecture {NN}.{md|txt}
+
+5. lecture(\d+)[-_]?video[-_]?transcript\.(md|txt)
+   → Lecture {NN}.{md|txt}
+
+6. (\d{1,2})\.(md|txt)
+   → Lecture {zero-padded NN}.{md|txt}
+```
+
+**Examples:**
+- `lecture13-transcript.md` → `Lecture 13.md`
+- `lecture-19-transcript.txt` → `Lecture 19.txt`
+- `1.md` → `Lecture 01.md`
+- `27.txt` → `Lecture 27.txt`
+
+---
+
+### ⚙️ **Zero-padding rule**
+- For numbers less than 10, prefix with `0`.
+  - e.g., `1` → `01`, `9` → `09`
+- For numbers 10 and above, keep as is.
+  - e.g., `13` → `13`, `27` → `27`
+
+---
+
+### 🚫 **Avoid duplicated or invalid renames**
+Ensure that:
+- A file isn't being renamed to the same name (`27-slides.md` → `27-slides.md` is redundant).
+- Files aren't mistakenly renamed across types (e.g., slide becoming transcript or vice versa).
+
+---
+
+Would you like this turned into a Python or shell script to batch rename your files accordingly?

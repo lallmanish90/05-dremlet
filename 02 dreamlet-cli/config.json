@@ -1,0 +1,94 @@
+{
+  "general": {
+    "input_dir": "input",
+    "output_dir": "output",
+    "verbose": true,
+    "skip_existing": true,
+    "dry_run": false
+  },
+  "page_02_rename": {
+    "patterns": {
+      "remove_prefixes": [
+        "Copy of ",
+        "copy of ",
+        "COPY OF "
+      ],
+      "standardize_extensions": true,
+      "fix_spacing": true
+    }
+  },
+  "page_03_save_text": {
+    "section_markers": [
+      "Slide ",
+      "Section ",
+      "Part "
+    ],
+    "min_section_length": 50,
+    "preserve_formatting": true
+  },
+  "page_04_remove_unwanted": {
+    "supported_extensions": [
+      ".txt",
+      ".md",
+      ".pptx",
+      ".zip",
+      ".png",
+      ".jpg",
+      ".jpeg",
+      ".mp3",
+      ".wav",
+      ".mp4"
+    ],
+    "delete_empty_folders": true
+  },
+  "page_05_move_slides": {
+    "target_folder": "all_slides",
+    "organize_by_type": true
+  },
+  "page_06_4k_image": {
+    "conversion_method": "libreoffice",
+    "enable_auto_fallback": true,
+    "create_without_logo": false,
+    "target_resolution": [
+      3840,
+      2160
+    ],
+    "logo_path": "config/logo.png",
+    "copyright_path": "config/copyright.txt"
+  },
+  "page_07_tts_kokoro": {
+    "languages": [
+      "English"
+    ],
+    "voice": "af_heart",
+    "audio_format": "mp3",
+    "speed": 1.0,
+    "normalize_text": true,
+    "enable_timestamps": false,
+    "save_timestamps": false,
+    "api_url": "http://localhost:8880/v1",
+    "thermal_management": {
+      "enable_thermal_throttling": true,
+      "max_temperature_celsius": 85,
+      "cooling_delay_seconds": 3.0,
+      "batch_size": 3,
+      "pause_between_lectures": 30
+    },
+    "processing_optimization": {
+      "max_concurrent_requests": 1,
+      "request_delay": 2.0,
+      "enable_progressive_cooling": true
+    }
+  },
+  "page_08_translator": {
+    "target_languages": [
+      "es",
+      "fr",
+      "de"
+    ],
+    "model": "gemma-3-12b-it-qat",
+    "temperature": 0.3,
+    "api_url": "http://127.0.0.1:1234/v1",
+    "api_key": "lm-studio"
+  }
+}

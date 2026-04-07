@@ -1,0 +1,80 @@
+You can get Kokoro to use your RTX 3050 by installing the GPU‐enabled ONNX runtime with CUDA 11.8, configuring Docker to expose your GPU, and specifying the CUDA execution provider in your code.
+
+## Overview  
+- **CUDA 11.8 & drivers**: Kokoro-Onnx’s GPU backend requires CUDA 11.8; later versions may not be supported[1].  
+- **Docker GPU support**: Use the NVIDIA Container Toolkit and the `--gpus all` flag to give your container access to the RTX 3050[4].  
+- **ONNX runtime**: Inside the container, install `onnxruntime-gpu` and in your Python script load the model with `CUDAExecutionProvider`.
+
+## Steps  
+
+1. **Install CUDA 11.8 and NVIDIA drivers**  
+   - On Windows 11, install the CUDA 11.8 toolkit and add `C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\bin` to your `PATH`[1].  
+
+2. **Enable GPU support in Docker**  
+   - Install the NVIDIA Container Toolkit on your host.  
+   - Restart Docker and run your Kokoro container with:  
+     ```bash
+     docker run --gpus all 
+     ```
+     This flag exposes all available GPUs to the container[4].  
+
+3. **Use the GPU-enabled ONNX runtime**  
+   - In your Dockerfile or virtual environment, install:  
+     ```bash
+     pip install onnxruntime-gpu
+     ```
+   - In your Python code, initialize ONNX Runtime with the CUDA provider:  
+     ```python
+     import onnxruntime as ort
+     session = ort.InferenceSession("kokoro.onnx",
+       providers=["CUDAExecutionProvider","CPUExecutionProvider"])
+     ```
+   - Run inference as usual; ONNX Runtime will dispatch compute to your RTX 3050.
+
+## Summary  
+Install CUDA 11.8, configure Docker with `--gpus all`, use `onnxruntime-gpu`, and set `CUDAExecutionProvider` when loading your model. This ensures Kokoro runs on your GPU instead of the CPU.
+
+Citations:
+[1] https://github.com/thewh1teagle/kokoro-onnx/issues/92
+[2] https://forums.docker.com/t/applications-not-using-gpu-inside-the-container/140376
+[3] https://forums.developer.nvidia.com/t/rtx-3050-desktop-cuda-capability/208320
+[4] https://www.devzero.io/blog/docker-gpu
+[5] https://docs.docker.com/compose/how-tos/gpu-support/
+[6] https://stackoverflow.com/questions/25185405/using-gpu-from-a-docker-container
+[7] https://blog.roboflow.com/use-the-gpu-in-docker/
+[8] https://github.com/remsky/Kokoro-FastAPI
+[9] https://forums.docker.com/t/i-am-trying-to-run-a-docker-container-using-nvidia-cuda-11-8-0-base-ubuntu22-04-as-the-base-image-with-pytorch-and-cuda-enabled-dependencies-to-execute-a-fastapi-application-the-application-works-perfectly-on-my-local-machine-and-correctly-detects-cuda/145160
+[10] https://forums.developer.nvidia.com/t/how-to-enable-gpu-in-custom-docker-image/192881
+[11] https://forums.developer.nvidia.com/t/applications-not-using-gpu-inside-docker-container/285911
+[12] https://stackoverflow.com/questions/73851446/gpu-not-available-in-docker
+[13] https://github.com/ultralytics/yolov5/issues/7277
+[14] https://forums.docker.com/t/issue-with-enabling-gpu-usage-in-docker-option-not-appearing/146342
+[15] https://github.com/abetlen/llama-cpp-python/issues/1882
+[16] https://github.com/NVIDIA/nvidia-container-toolkit/issues/1021
+[17] https://forums.docker.com/t/nvidia-cuda-doesnt-work-on-docker-desktop-but-works-on-docker-engine/130668
+[18] https://forums.developer.nvidia.com/t/docker-not-detecting-nvidia-gpu/321480
+[19] https://www.reddit.com/r/ollama/comments/1ip9772/ollama_in_docker_reports_100_gpu_but_runs_on_cpu/
+[20] https://github.com/khoj-ai/khoj/discussions/854
+[21] https://forums.docker.com/t/getting-nvidia-cuda-gpu-to-run-on-windows-docker-desktop/142018
+[22] https://github.com/ollama/ollama/issues/6364
+[23] https://github.com/open-mmlab/OpenPCDet/issues/811
+[24] https://github.com/ollama/ollama/issues/1813
+[25] https://developer.nvidia.com/how-to-cuda-python
+[26] https://forums.developer.nvidia.com/t/rtx-6000-ada-slower-than-geforce-rtx-3050-in-python-with-tensorflow-2/265260
+[27] https://stackoverflow.com/questions/79165030/how-can-i-enable-cuda-in-pytorch-for-nvidia-geforce-rtx-3050-ti
+[28] https://www.reddit.com/r/deeplearning/comments/14zdae7/setting_up_cuda_on_my_laptop/
+[29] https://www.reddit.com/r/StableDiffusion/comments/z6nkh0/torch_is_not_able_to_use_gpu/
+[30] https://docs.docker.com/compose/how-tos/gpu-support/
+[31] https://www.youtube.com/watch?v=KlTz3SJWnVk
+[32] https://docs.docker.com/desktop/features/gpu/
+[33] https://blog.roboflow.com/use-the-gpu-in-docker/
+[34] https://www.reddit.com/r/docker/comments/196tfjk/i_can_use_my_nvidia_gpu_cuda_just_fine_without/
+[35] https://www.reddit.com/r/HPC/comments/18jv0nl/dockerfile_warning_the_nvidia_driver_was_not/
+[36] https://stackoverflow.com/questions/74294080/cuda-11-8-and-pytorch-with-nvidia-geforce-rtx-3050-ti-laptop-gpu-not-working-gp
+[37] https://forums.docker.com/t/i-am-trying-to-run-a-docker-container-using-nvidia-cuda-11-8-0-base-ubuntu22-04-as-the-base-image-with-pytorch-and-cuda-enabled-dependencies-to-execute-a-fastapi-application-the-application-works-perfectly-on-my-local-machine-and-correctly-detects-cuda/145160
+[38] https://www.freecodecamp.org/news/how-to-setup-windows-machine-for-ml-dl-using-nvidia-graphics-card-cuda/
+[39] https://stackoverflow.com/questions/72129213/using-gpu-in-vs-code-container
+[40] https://docs.anaconda.com/working-with-conda/packages/gpu-packages/
+
+---
+Answer from Perplexity: pplx.ai/share

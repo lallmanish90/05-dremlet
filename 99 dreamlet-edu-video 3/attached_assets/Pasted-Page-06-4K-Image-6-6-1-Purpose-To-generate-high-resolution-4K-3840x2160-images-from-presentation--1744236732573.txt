@@ -1,0 +1,60 @@
+Page 06: 4K Image
+6.6.1 Purpose
+To generate high-resolution 4K (3840x2160) images from presentation slides for video production, with capability to upscale images, apply branding elements including company logo and copyright information.
+
+6.6.2 User Interface Components
+Presentation file selection
+Image quality parameters
+Output format options
+Batch processing controls
+Progress indicators with Streamlit progress bar
+Resolution settings (default: 3840x2160)
+Branding options for applying logo and copyright information
+User preference controls for handling already processed files
+6.6.3 Functionality
+PPTX to PNG Conversion
+Process PPTX presentation files
+Extract individual slides and embedded images
+Upscale images to 4K resolution using high-quality interpolation
+Create organized folder structure for output images
+Apply consistent naming convention (zero-padded numbering)
+Move processed presentation files to an "all_pptx" folder
+Maintain synchronization with audio sections
+Save all processed files to the output folder, maintaining the input folder structure
+Image Personalization
+Add company logo from root-level logo.png file
+Add copyright text from root-level copyright.txt file
+Create "without_logo_png" folders to preserve original images
+Configurable logo size, position, and padding
+Configurable copyright text position, font size, and padding
+User preference options for handling already processed files:
+Skip all already-processed files
+Process all already-processed files
+Ask for each file
+Maintain image quality when saving processed files
+Support various image formats (PNG, JPEG)
+Save all personalized images to the output folder, maintaining the input folder structure
+Progress Tracking
+Display processing progress through Streamlit progress bar
+Show statistics about processed and skipped files
+6.6.4 Technical Implementation
+PPTX to PNG Conversion:
+
+Use python-pptx library for PPTX file processing
+Use OpenCV (cv2) for image manipulation and upscaling
+Implement Lanczos interpolation for high-quality upscaling
+Create folder with same name as PPTX file for organized output
+Calculate appropriate scaling factors to reach target 4K resolution
+Only upscale images smaller than target resolution
+Process files recursively through folder structure
+Display progress using Streamlit's progress bar
+Image Personalization:
+
+Use PIL (Python Imaging Library/Pillow) for image manipulation
+Implement font fallback mechanism for text rendering
+Support configurable positioning (top-left, top-right, bottom-left, bottom-right, bottom-center)
+Preserve image quality with optimized saving
+Maintain original aspect ratio during upscaling
+Create alpha-composite images for proper logo transparency
+Handle various image formats consistently
+Display progress using Streamlit's progress bar

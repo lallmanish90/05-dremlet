@@ -1,0 +1,34 @@
+{
+  "workflow_id": "31 Comprehensive Theoretical Course on Bug Bounty Programs and AI-Driven Cybersecurity_1756667267",
+  "project_path": "/Users/manishlall/Code/replit/DreamletEduVideo/input/31 Comprehensive Theoretical Course on Bug Bounty Programs and AI-Driven Cybersecurity",
+  "total_steps": 5,
+  "current_step": 3,
+  "completed_steps": 2,
+  "failed_steps": 1,
+  "status": "partial",
+  "start_time": "2025-09-01T00:37:47.192284",
+  "step_results": [
+    {
+      "step_id": "01_adjust",
+      "step_name": "Adjust AAA EEE",
+      "success": true,
+      "message": "Adjusting transcript and slide files completed successfully",
+      "timestamp": "2025-09-01T00:37:50.205794"
+    },
+    {
+      "step_id": "02_rename",
+      "step_name": "Rename Files",
+      "success": true,
+      "message": "Renaming files to standard format completed successfully",
+      "timestamp": "2025-09-01T00:37:52.222870"
+    },
+    {
+      "step_id": "04_save_text",
+      "step_name": "Save Text Sections",
+      "success": false,
+      "message": "Page file not found: pages/04_Save_Text.py",
+      "timestamp": "2025-09-01T00:37:52.233974"
+    }
+  ],
+  "end_time": "2025-09-01T00:37:52.234593"
+}

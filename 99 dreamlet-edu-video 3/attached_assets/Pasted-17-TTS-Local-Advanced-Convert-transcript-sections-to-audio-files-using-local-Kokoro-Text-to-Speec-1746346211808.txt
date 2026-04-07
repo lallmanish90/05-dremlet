@@ -1,0 +1,204 @@
+17 TTS Local (Advanced)
+Convert transcript sections to audio files using local Kokoro Text-to-Speech API with hardware acceleration.
+
+Hardware Acceleration Information
+
+Detected Hardware
+System: Windows
+
+CPU: Intel64 Family 6 Model 154 Stepping 3, GenuineIntel
+
+CPU Threads: 12
+
+GPU: NVIDIA GeForce RTX 3050 Laptop GPU ✅
+
+Acceleration: GPU: NVIDIA GeForce RTX 3050 Laptop GPU
+
+Optimization Settings
+Batch Size: 4
+
+Parallel Processing: Enabled
+
+Worker Threads: 4
+
+Optimization Level: high
+
+💻 Could not determine GPU status - Processing may be slower
+
+For better performance, ensure CUDA and PyTorch GPU support are properly configured
+
+
+Transcript Files
+
+
+Summary Files
+
+Summary Files
+Generate audio files from summary sections in 'English Summary text' folders with hardware acceleration.
+
+🚀 Using hardware acceleration: GPU: NVIDIA GeForce RTX 3050 Laptop GPU
+
+Optimized processing settings: 4 worker threads, batch size: 4, optimization level: high
+
+Acceleration type: NVIDIA CUDA
+
+NVIDIA CUDA acceleration provides optimal performance for TTS processing
+
+TTS Settings
+Model: Kokoro (Local)
+Running on GPU: NVIDIA GeForce RTX 3050 Laptop GPU with acceleration
+
+Voice Selection Mode
+
+
+Single Voice
+
+
+Advanced (Voice Combination)
+
+Select Voice
+
+Heart (Female - English)
+Audio Format
+
+mp3
+Speech Speed
+
+0.50
+2.00
+Advanced Options
+
+Select Sections for TTS
+Course: Course 14
+
+Process TTS
+Selected: 50 lectures, 338 sections, 33238 words
+
+Estimated processing time: ~831.0 seconds
+
+
+Processing Progress
+Processing 50/50 lectures (100% complete)
+
+Processing complete!
+
+Latest Completed: Course 14 - Lecture 50
+✅ Successfully processed 0 sections
+⏭️ Skipped 0 sections (already exist)
+❌ Failed to process 6 sections
+
+Final Processing Results
+Total processed: 338 sections
+
+Successfully completed: 0 sections
+
+Skipped: 0 sections
+
+Failed: 338 sections
+
+Using parallel processing with 4 worker threads
+
+Completed processing 3 files
+Using parallel processing with 4 worker threads
+
+Processing Lecture 01.txt generated an exception:
+
+Processing Lecture 02.txt generated an exception:
+
+Processing Lecture 03.txt generated an exception:
+
+Auto-retrying 3 failed files with sequential processing...
+
+Processing complete
+Encountered 3 errors so far
+
+Using parallel processing with 4 worker threads
+
+Completed processing 6 files
+Using parallel processing with 4 worker threads
+
+Processing Lecture 01.txt generated an exception:
+
+Processing Lecture 04.txt generated an exception:
+
+Processing Lecture 02.txt generated an exception:
+
+Processing Lecture 03.txt generated an exception:
+
+Processing Lecture 05.txt generated an exception:
+
+Processing Lecture 06.txt generated an exception:
+
+Auto-retrying 6 failed files with sequential processing...
+
+Processing complete
+Encountered 6 errors so far
+
+Using parallel processing with 4 worker threads
+
+Completed processing 7 files
+Using parallel processing with 4 worker threads
+
+Processing Lecture 02.txt generated an exception:
+
+Processing Lecture 01.txt generated an exception:
+
+Processing Lecture 03.txt generated an exception:
+
+Processing Lecture 04.txt generated an exception:
+
+Processing Lecture 05.txt generated an exception:
+
+Processing Lecture 06.txt generated an exception:
+
+Processing Lecture 07.txt generated an exception:
+
+Auto-retrying 7 failed files with sequential processing...
+
+Processing complete
+Encountered 7 errors so far
+
+Using parallel processing with 4 worker threads
+
+Completed processing 6 files
+Using parallel processing with 4 worker threads
+
+Processing Lecture 01.txt generated an exception:
+
+Processing Lecture 03.txt generated an exception:
+
+Processing Lecture 02.txt generated an exception:
+
+Processing Lecture 06.txt generated an exception:
+
+Processing Lecture 04.txt generated an exception:
+
+Processing Lecture 05.txt generated an exception:
+
+Auto-retrying 6 failed files with sequential processing...
+
+Processing complete
+Encountered 6 errors so far
+
+Using parallel processing with 4 worker threads
+
+Completed processing 8 files
+Using parallel processing with 4 worker threads
+
+Processing Lecture 01.txt generated an exception:
+
+Processing Lecture 03.txt generated an exception:
+
+Processing Lecture 02.txt generated an exception:
+
+Processing Lecture 04.txt generated an exception:
+
+Processing Lecture 05.txt generated an exception:
+
+Processing Lecture 06.txt generated an exception:
+
+Processing Lecture 07.txt generated an exception:
+
+Processing Lecture 08.txt generated an exception:
+
+Auto-retrying 8 failed files with sequential processing...

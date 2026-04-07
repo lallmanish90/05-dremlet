@@ -1,0 +1,45 @@
+[project]
+name = "document-processor"
+version = "0.1.0"
+description = "A Streamlit application for processing documents and media files"
+requires-python = ">=3.11"
+dependencies = [
+    "ffmpeg-python>=0.2.0",
+    "numpy>=2.2.4",
+    "openai>=1.72.0",
+    "opencv-python-headless>=4.11.0.86",
+    "opencv-python>=4.11.0.86",
+    "pillow>=11.1.0",
+    "python-docx>=1.1.2",
+    "python-pptx>=1.0.2",
+    "setuptools>=78.1.0",
+    "streamlit>=1.44.1",
+    "pdf2image>=1.17.0",
+    "psutil>=7.0.0",
+    "anthropic>=0.50.0",
+    "requests>=2.32.3",
+    "pandas>=2.2.3",
+]
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+]
+
+# System dependencies note:
+# This project requires several system-level dependencies:
+# - FFmpeg (for video/audio processing)
+# - Poppler utils (for PDF processing) 
+# - Image processing libraries (libjpeg, libwebp, libtiff, etc.)
+# - LibreOffice (for office document processing)
+# See README.md for complete installation instructions
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["*"]
+exclude = ["tests*", "*.tests*"]

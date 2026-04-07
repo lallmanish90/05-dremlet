@@ -1,0 +1,62 @@
+Full Logic Specification: Rename Page, Move Page, Save Text Page
+This update introduces additional rules and features while ensuring that all current functionality remains intact. Each change is modular and non-breaking.
+
+🔁 Rename Page
+🔤 1. Transcript Files
+Pattern: xx-b or xx-artifact-b
+
+Action: Treat as transcript files.
+
+Rename: Rename as Lecture XX.md or Lecture XX.txt, preserving the original extension.
+
+✅ This follows already implemented transcript handling. Keep existing logic intact.
+
+🖼️ 2. Slide Files
+Pattern: xx-c or xx-artifact-c
+
+Action: Treat as slide files.
+
+Rename: Sequentially as 01-slides, 02-slides, etc., keeping the original extension.
+
+✅ Continue using the working logic that already handles xx-s files similarly.
+
+📝 3. Summary Files
+Pattern: xx-d or xx-artifact-d
+
+Action: Treat as summary files.
+
+Rename: Sequentially as 01-summary, 02-summary, etc., preserving the original extension.
+
+🔒 Notes for Rename Page
+✅ Keep all existing renaming logic untouched.
+
+✅ All previously working renaming flows (transcripts, slides, etc.) must remain as-is.
+
+✅ This update is additive — no existing functionality should be broken.
+
+📂 Move Page
+🖼️ Slide Files
+Continue to move renamed slide files into the _slides folder as currently implemented.
+
+✅ This feature is already working — do not modify or remove it.
+
+📝 Summary Files
+New Rule: Move all renamed summary files (i.e., those with -d or -artifact-d) into the _summary folder.
+
+✅ Ensure naming and detection matches the Rename Page logic.
+
+💾 Save Text Page
+✅ Keep Existing Logic Intact
+Preserve current functionality for saving transcript text into each Lecture folder under the English text/ subfolder, using slide markers for naming.
+
+🆕 New Feature – Summary Text Saving
+For each lecture folder:
+
+Save the corresponding summary text.
+
+File name: English summary text.txt or .md (match original content format).
+
+Folder: Same Lecture XX/English text/ path as transcripts.
+
+✅ This mirrors the logic used for slide-based text saving.
+
