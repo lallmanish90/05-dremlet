@@ -31,13 +31,14 @@ import os
 import re
 import time
 import glob
+import enum
 import platform
 import subprocess
 import tempfile
 import gc
 import psutil
 from pathlib import Path
-from typing import Dict, List, Tuple, Optional
+from typing import Any, Dict, List, Tuple, Optional
 import numpy as np
 import cv2
 from PIL import Image
@@ -123,88 +124,290 @@ class SystemPerformanceMonitor:
         else:
             return "balanced"
 
+class ConflictPolicy(str, enum.Enum):
+    SKIP_SAFELY = "skip_safely"
+    OVERWRITE = "overwrite"
+    RENDER_NEW_OUTPUT = "render_new_output"
+    REPORT_ONLY = "report_only"
+
+
+CONFLICT_POLICY_LABELS = {
+    ConflictPolicy.SKIP_SAFELY.value: "Skip safely",
+    ConflictPolicy.OVERWRITE.value: "Re-render and overwrite",
+    ConflictPolicy.RENDER_NEW_OUTPUT.value: "Render to new output",
+    ConflictPolicy.REPORT_ONLY.value: "Report only",
+}
+
 MACHINE_PROFILES = {
-    "macbook_m3_pro": {
+    "macbook_pro_m3_pro_18gb": {
         "name": "MacBook Pro M3 Pro (18GB)",
-        "gpu_acceleration": {
-            "optimization_settings": {
-                "max_threads": 8,
-                "batch_size": 6,
-                "memory_limit_gb": 14,
-            }
+        "notes": "Quality-first macOS profile using VideoToolbox when available.",
+        "match_rules": {
+            "platform": "darwin",
+            "architecture": ["arm64"],
+            "ram_gb_min": 16,
+            "ram_gb_max": 20,
+            "gpu_type": "apple_silicon",
+            "cpu_contains": None,
+            "gpu_name_contains": None,
+        },
+        "encoder_preferences": ["h264_videotoolbox", "libx264"],
+        "optimization_settings": {
+            "max_threads": 8,
+            "batch_size": 6,
+            "memory_limit_gb": 14,
+            "quality_preset": "high_quality",
+            "processing_mode": "balanced",
         },
     },
-    "windows_i5_rtx3050": {
+    "windows_i5_12450h_rtx3050_16gb": {
         "name": "Acer Windows laptop (i5-12450H + RTX 3050)",
-        "gpu_acceleration": {
-            "optimization_settings": {
-                "max_threads": 6,
-                "batch_size": 4,
-                "memory_limit_gb": 12,
-            }
+        "notes": "Quality-first Windows profile using NVENC when available.",
+        "match_rules": {
+            "platform": "windows",
+            "architecture": ["amd64", "x86_64"],
+            "ram_gb_min": 14,
+            "ram_gb_max": 18,
+            "gpu_type": "nvidia",
+            "cpu_contains": "i5-12450h",
+            "gpu_name_contains": "rtx 3050",
+        },
+        "encoder_preferences": ["h264_nvenc", "libx264"],
+        "optimization_settings": {
+            "max_threads": 6,
+            "batch_size": 4,
+            "memory_limit_gb": 12,
+            "quality_preset": "high_quality",
+            "processing_mode": "balanced",
         },
     },
-    "generic": {
+    "generic_fallback": {
         "name": "Generic fallback profile",
-        "gpu_acceleration": {
-            "optimization_settings": {
-                "max_threads": 4,
-                "batch_size": 2,
-                "memory_limit_gb": 6,
-            }
+        "notes": "Fallback profile for machines outside the two supported laptops.",
+        "match_rules": {},
+        "encoder_preferences": ["libx264"],
+        "optimization_settings": {
+            "max_threads": 4,
+            "batch_size": 2,
+            "memory_limit_gb": 6,
+            "quality_preset": "balanced",
+            "processing_mode": "balanced",
         },
     },
 }
 
+
+def detect_apple_silicon_capability() -> bool:
+    if platform.system() != "Darwin":
+        return False
+    try:
+        result = subprocess.run(
+            ["sysctl", "-n", "hw.optional.arm64"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        return result.returncode == 0 and result.stdout.strip() == "1"
+    except Exception:
+        return False
+
+
+def detect_gpu_info() -> Dict[str, Any]:
+    gpu_info: Dict[str, Any] = {"gpu_detected": False}
+    try:
+        result = subprocess.run(
+            ["nvidia-smi", "--query-gpu=name", "--format=csv,noheader"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            gpu_name = result.stdout.strip().splitlines()[0]
+            gpu_info.update({
+                "gpu_detected": True,
+                "gpu_type": "nvidia",
+                "gpu_name": gpu_name,
+            })
+    except Exception:
+        pass
+
+    if detect_apple_silicon_capability():
+        gpu_info.update({
+            "gpu_detected": True,
+            "gpu_type": "apple_silicon",
+            "gpu_name": "Apple Silicon GPU",
+        })
+
+    return gpu_info
+
+
+def collect_system_info() -> Dict[str, Any]:
+    architecture = platform.machine().lower()
+    cpu = (platform.processor() or "").lower()
+    if detect_apple_silicon_capability():
+        architecture = "arm64"
+        if not cpu or cpu == "i386":
+            cpu = "apple silicon"
+
+    system_info = {
+        "hostname": platform.node().lower(),
+        "platform": platform.system().lower(),
+        "architecture": architecture,
+        "cpu": cpu,
+        "memory_gb": round(psutil.virtual_memory().total / (1024**3)),
+        "cpu_count": psutil.cpu_count() or 1,
+    }
+    system_info.update(detect_gpu_info())
+    return system_info
+
+
+def evaluate_profile_match(profile: Dict[str, Any], system_info: Dict[str, Any]) -> Optional[Tuple[int, List[str]]]:
+    rules = profile.get("match_rules", {})
+    reasons: List[str] = []
+    score = 0
+
+    platform_rule = rules.get("platform")
+    if platform_rule:
+        if system_info.get("platform") != platform_rule:
+            return None
+        score += 20
+        reasons.append(f"platform={platform_rule}")
+
+    architecture_rules = rules.get("architecture", [])
+    if architecture_rules:
+        if system_info.get("architecture") not in architecture_rules:
+            return None
+        score += 15
+        reasons.append(f"architecture={system_info.get('architecture')}")
+
+    cpu_rule = rules.get("cpu_contains")
+    if cpu_rule:
+        if cpu_rule not in system_info.get("cpu", ""):
+            return None
+        score += 10
+        reasons.append(f"cpu contains {cpu_rule}")
+
+    ram_gb = int(system_info.get("memory_gb") or 0)
+    ram_min = rules.get("ram_gb_min")
+    ram_max = rules.get("ram_gb_max")
+    if ram_min is not None and ram_gb < ram_min:
+        return None
+    if ram_max is not None and ram_gb > ram_max:
+        return None
+    if ram_min is not None or ram_max is not None:
+        score += 10
+        reasons.append(f"ram={ram_gb}GB")
+
+    gpu_type_rule = rules.get("gpu_type")
+    if gpu_type_rule:
+        if system_info.get("gpu_type") != gpu_type_rule:
+            return None
+        score += 20
+        reasons.append(f"gpu_type={gpu_type_rule}")
+
+    gpu_name_rule = rules.get("gpu_name_contains")
+    if gpu_name_rule:
+        gpu_name = (system_info.get("gpu_name") or "").lower()
+        if gpu_name_rule not in gpu_name:
+            return None
+        score += 25
+        reasons.append(f"gpu name contains {gpu_name_rule}")
+
+    return score, reasons
+
+
+def select_machine_profile(system_info: Dict[str, Any], profiles: Dict[str, Dict[str, Any]], override_profile_id: Optional[str] = None) -> Dict[str, Any]:
+    if override_profile_id:
+        profile = profiles.get(override_profile_id, profiles["generic_fallback"])
+        return {
+            "machine_id": override_profile_id if override_profile_id in profiles else "generic_fallback",
+            "name": profile["name"],
+            "notes": profile.get("notes", ""),
+            "match_source": "manual",
+            "match_reasons": ["Manual override selected"],
+            "system_info": system_info,
+            "profile": profile,
+        }
+
+    matches: List[Tuple[int, str, List[str]]] = []
+    for machine_id, profile in profiles.items():
+        if machine_id == "generic_fallback":
+            continue
+        result = evaluate_profile_match(profile, system_info)
+        if result is not None:
+            score, reasons = result
+            matches.append((score, machine_id, reasons))
+
+    if matches:
+        matches.sort(key=lambda item: item[0], reverse=True)
+        _, machine_id, reasons = matches[0]
+        profile = profiles[machine_id]
+        return {
+            "machine_id": machine_id,
+            "name": profile["name"],
+            "notes": profile.get("notes", ""),
+            "match_source": "auto",
+            "match_reasons": reasons,
+            "system_info": system_info,
+            "profile": profile,
+        }
+
+    profile = profiles["generic_fallback"]
+    return {
+        "machine_id": "generic_fallback",
+        "name": profile["name"],
+        "notes": profile.get("notes", ""),
+        "match_source": "fallback",
+        "match_reasons": ["No configured machine profile matched"],
+        "system_info": system_info,
+        "profile": profile,
+    }
+
+
+def select_video_encoder(machine_id: str, system: str, machine: str, encoders_output: str) -> Tuple[str, Optional[str], Dict[str, Any]]:
+    encoders_output = encoders_output or ""
+
+    if machine_id == "windows_i5_12450h_rtx3050_16gb" and "h264_nvenc" in encoders_output:
+        return "h264_nvenc", "cuda", {"hardware_encoding": True, "hardware_decoding": True, "performance_tier": "high"}
+    if machine_id == "macbook_pro_m3_pro_18gb" and "h264_videotoolbox" in encoders_output:
+        return "h264_videotoolbox", "videotoolbox", {"hardware_encoding": True, "hardware_decoding": True, "performance_tier": "high"}
+    if system == "Linux":
+        if "h264_nvenc" in encoders_output:
+            return "h264_nvenc", "cuda", {"hardware_encoding": True, "hardware_decoding": True, "performance_tier": "high"}
+        if "h264_qsv" in encoders_output:
+            return "h264_qsv", "qsv", {"hardware_encoding": True, "hardware_decoding": True, "performance_tier": "medium"}
+        if "h264_vaapi" in encoders_output:
+            return "h264_vaapi", "vaapi", {"hardware_encoding": True, "hardware_decoding": True, "performance_tier": "medium"}
+    return "libx264", None, {"hardware_encoding": False, "hardware_decoding": False, "performance_tier": "basic"}
+
+
 class BalancedMachineConfig:
     """Load and apply balanced machine configurations"""
-    
-    def __init__(self):
-        self.config = self.get_fallback_config()
+
+    def __init__(self, override_profile_id: Optional[str] = None):
+        self.override_profile_id = override_profile_id
+        self.machine_config = select_machine_profile(collect_system_info(), MACHINE_PROFILES, override_profile_id)
         self.performance_monitor = SystemPerformanceMonitor(self.get_memory_limit())
-    
-    def get_fallback_config(self) -> Dict:
-        """Embedded machine configuration for the two supported machines"""
-        return {"laptop_profiles": MACHINE_PROFILES}
-    
+
     def detect_current_machine(self) -> str:
-        """Detect current machine profile"""
-        system = platform.system()
-        machine = platform.machine()
-        
-        if system == "Darwin" and "arm" in machine.lower():
-            return "macbook_m3_pro"
-        elif system == "Windows":
-            return "windows_i5_rtx3050"
-        else:
-            return "generic"
+        return self.machine_config["machine_id"]
 
     def get_profile_name(self) -> str:
-        machine_id = self.detect_current_machine()
-        profiles = self.config.get("laptop_profiles", {})
-        return profiles.get(machine_id, profiles["generic"]).get("name", machine_id)
-    
-    def get_base_optimization_settings(self) -> Dict:
-        """Get base optimization settings for current machine"""
-        machine_id = self.detect_current_machine()
-        profiles = self.config.get("laptop_profiles", {})
-        
-        if machine_id in profiles:
-            return profiles[machine_id]["gpu_acceleration"]["optimization_settings"]
-        else:
-            return {
-                "max_threads": 4,
-                "batch_size": 2,
-                "memory_limit_gb": 6
-            }
-    
+        return self.machine_config["name"]
+
+    def get_machine_info(self) -> Dict[str, Any]:
+        return self.machine_config
+
+    def get_base_optimization_settings(self) -> Dict[str, Any]:
+        return dict(self.machine_config["profile"]["optimization_settings"])
+
     def get_adaptive_optimization_settings(self) -> Dict:
-        """Get adaptive optimization settings based on current system state"""
         base_settings = self.get_base_optimization_settings()
-        return self.performance_monitor.get_adaptive_settings(base_settings)
-    
+        adaptive = self.performance_monitor.get_adaptive_settings(base_settings)
+        adaptive["quality_preset"] = base_settings.get("quality_preset", adaptive.get("quality_preset", "balanced"))
+        return adaptive
+
     def get_memory_limit(self) -> float:
-        """Get memory limit for current machine"""
         settings = self.get_base_optimization_settings()
         return settings.get("memory_limit_gb", 8.0)
 
@@ -392,7 +595,7 @@ def find_processed_lectures() -> Dict[str, Dict[str, Dict]]:
 
     return organized_data
 
-def generate_output_path(lecture_path: str, language: str = "English") -> str:
+def generate_output_path(lecture_path: str, language: str = "English", summary: bool = False, suffix: str = "") -> str:
     """Generate the output path for the MP4 file"""
     rel_path = os.path.relpath(lecture_path, INPUT_DIR)
     path_components = rel_path.split(os.sep)
@@ -413,22 +616,153 @@ def generate_output_path(lecture_path: str, language: str = "English") -> str:
 
     output_dir_path = os.path.join(OUTPUT_DIR, language, course, section)
     ensure_directory_exists(output_dir_path)
-    output_file = os.path.join(output_dir_path, f"{lecture_name}.mp4")
+    filename = f"{lecture_name}.mp4"
+    if summary:
+        filename = f"{lecture_name}(summary).mp4"
+    if suffix:
+        name, ext = os.path.splitext(filename)
+        filename = f"{name}{suffix}{ext}"
+    output_file = os.path.join(output_dir_path, filename)
 
     return output_file
 
-def detect_hardware_acceleration() -> Tuple[str, str, Dict]:
+
+def build_rerun_output_path(output_path: str) -> str:
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    path = Path(output_path)
+    return str(path.with_name(f"{path.stem} (rerun {timestamp}){path.suffix}"))
+
+
+def resolve_existing_output_action(existing_output_exists: bool, conflict_policy: str) -> Dict[str, str]:
+    if not existing_output_exists:
+        return {"action": "render", "status": "ready", "message": "Output does not exist yet"}
+    if conflict_policy == ConflictPolicy.REPORT_ONLY.value:
+        return {"action": "report", "status": "reported", "message": "Existing output detected; report-only mode left it unchanged"}
+    if conflict_policy == ConflictPolicy.RENDER_NEW_OUTPUT.value:
+        return {"action": "render_new_output", "status": "ready", "message": "Existing output detected; rendering to a new output path"}
+    if conflict_policy == ConflictPolicy.OVERWRITE.value:
+        return {"action": "render", "status": "ready", "message": "Existing output detected; output will be overwritten"}
+    return {"action": "skip", "status": "skipped", "message": "Existing output detected; skipped safely"}
+
+
+def build_render_inventory(
+    organized_data: Dict[str, Dict[str, Dict]],
+    selected_language: str,
+    generate_regular: bool,
+    generate_summary: bool,
+    conflict_policy: str,
+) -> Dict[str, Any]:
+    jobs: List[Dict[str, Any]] = []
+    lecture_inventory: Dict[Tuple[str, str, str, str], Dict[str, Any]] = {}
+    summary = {
+        "ready_count": 0,
+        "processed_count": 0,
+        "lecture_count": 0,
+        "output_count": 0,
+    }
+
+    for subject, courses in organized_data.items():
+        for course, sections in courses.items():
+            for section, section_lectures in sections.items():
+                for lecture, lecture_data in section_lectures.items():
+                    lang_data = lecture_data.get("language_data", {}).get(selected_language)
+                    if not lang_data:
+                        continue
+
+                    lecture_key = (subject, course, section, lecture)
+                    lecture_summary = {
+                        "lecture_data": lecture_data,
+                        "ready_outputs": 0,
+                        "processed_outputs": 0,
+                        "output_count": 0,
+                        "jobs": [],
+                    }
+                    lecture_jobs: List[Dict[str, Any]] = []
+
+                    if generate_regular and lang_data.get("count_match"):
+                        output_path = generate_output_path(lecture_data["path"], selected_language, summary=False)
+                        existing = os.path.exists(output_path)
+                        decision = resolve_existing_output_action(existing, conflict_policy)
+                        lecture_jobs.append({
+                            "subject": subject,
+                            "course": course,
+                            "section": section,
+                            "lecture": lecture,
+                            "type": "Regular",
+                            "summary": False,
+                            "lecture_data": lecture_data,
+                            "output_path": output_path,
+                            "existing_output_exists": existing,
+                            "decision": decision,
+                        })
+
+                    if generate_summary and lang_data.get("has_summary_audio") and lang_data.get("summary_count_match"):
+                        output_path = generate_output_path(lecture_data["path"], selected_language, summary=True)
+                        existing = os.path.exists(output_path)
+                        decision = resolve_existing_output_action(existing, conflict_policy)
+                        lecture_jobs.append({
+                            "subject": subject,
+                            "course": course,
+                            "section": section,
+                            "lecture": lecture,
+                            "type": "Summary",
+                            "summary": True,
+                            "lecture_data": lecture_data,
+                            "output_path": output_path,
+                            "existing_output_exists": existing,
+                            "decision": decision,
+                        })
+
+                    if not lecture_jobs:
+                        continue
+
+                    summary["lecture_count"] += 1
+                    summary["output_count"] += len(lecture_jobs)
+                    summary["processed_count"] += sum(1 for job in lecture_jobs if job["existing_output_exists"])
+                    summary["ready_count"] += sum(
+                        1 for job in lecture_jobs if job["decision"]["action"] in {"render", "render_new_output"}
+                    )
+                    lecture_summary["jobs"] = lecture_jobs
+                    lecture_summary["output_count"] = len(lecture_jobs)
+                    lecture_summary["processed_outputs"] = sum(1 for job in lecture_jobs if job["existing_output_exists"])
+                    lecture_summary["ready_outputs"] = sum(
+                        1 for job in lecture_jobs if job["decision"]["action"] in {"render", "render_new_output"}
+                    )
+                    jobs.extend(lecture_jobs)
+                    lecture_inventory[lecture_key] = lecture_summary
+
+    return {
+        "jobs": jobs,
+        "lectures": lecture_inventory,
+        "summary": summary,
+    }
+
+
+def build_top_summary(machine_info: Dict[str, Any], encoder: str, inventory: Dict[str, Any], conflict_policy_label: str) -> Dict[str, Any]:
+    encoder_labels = {
+        "h264_videotoolbox": "VideoToolbox",
+        "h264_nvenc": "NVENC",
+        "h264_qsv": "Intel Quick Sync",
+        "h264_vaapi": "VAAPI",
+        "libx264": "CPU (libx264)",
+    }
+    return {
+        "machine": machine_info["name"],
+        "mode": "Hardware quality-first" if encoder != "libx264" else "CPU quality-first",
+        "recommended_encoder": encoder_labels.get(encoder, encoder),
+        "conflict_policy": conflict_policy_label,
+        "metrics": [
+            ("Ready", inventory["summary"]["ready_count"]),
+            ("Processed", inventory["summary"]["processed_count"]),
+            ("Lectures", inventory["summary"]["lecture_count"]),
+            ("Outputs", inventory["summary"]["output_count"]),
+        ],
+    }
+
+def detect_hardware_acceleration(config: Optional[BalancedMachineConfig] = None) -> Tuple[str, Optional[str], Dict]:
     """Detect available hardware acceleration and capabilities"""
     system = platform.system()
     machine = platform.machine()
-
-    encoder = 'libx264'
-    decoder = None
-    capabilities = {
-        "hardware_encoding": False,
-        "hardware_decoding": False,
-        "performance_tier": "basic"
-    }
 
     try:
         encoders_output = subprocess.run(
@@ -439,50 +773,8 @@ def detect_hardware_acceleration() -> Tuple[str, str, Dict]:
         ).stdout
     except Exception:
         encoders_output = ""
-
-    if system == 'Windows' and 'h264_nvenc' in encoders_output:
-        encoder = 'h264_nvenc'
-        decoder = 'cuda'
-        capabilities.update({
-            "hardware_encoding": True,
-            "hardware_decoding": True,
-            "performance_tier": "high"
-        })
-    elif system == 'Darwin' and 'arm' in machine.lower():
-        encoder = 'h264_videotoolbox'
-        decoder = 'videotoolbox'
-        capabilities.update({
-            "hardware_encoding": True,
-            "hardware_decoding": True,
-            "performance_tier": "high"
-        })
-    elif system == 'Linux':
-        if 'h264_nvenc' in encoders_output:
-            encoder = 'h264_nvenc'
-            decoder = 'cuda'
-            capabilities.update({
-                "hardware_encoding": True,
-                "hardware_decoding": True,
-                "performance_tier": "high"
-            })
-        elif 'h264_qsv' in encoders_output:
-            encoder = 'h264_qsv'
-            decoder = 'qsv'
-            capabilities.update({
-                "hardware_encoding": True,
-                "hardware_decoding": True,
-                "performance_tier": "medium"
-            })
-        elif 'h264_vaapi' in encoders_output:
-            encoder = 'h264_vaapi'
-            decoder = 'vaapi'
-            capabilities.update({
-                "hardware_encoding": True,
-                "hardware_decoding": True,
-                "performance_tier": "medium"
-            })
-    
-    return encoder, decoder, capabilities
+    machine_id = config.detect_current_machine() if config else "generic_fallback"
+    return select_video_encoder(machine_id, system, machine, encoders_output)
 
 class BalancedImageProcessor:
     """Balanced image processor with adaptive quality settings"""
@@ -579,7 +871,7 @@ class BalancedFFmpegProcessor:
     def __init__(self, config: BalancedMachineConfig):
         self.config = config
         self.settings = config.get_adaptive_optimization_settings()
-        self.encoder, self.decoder, self.capabilities = detect_hardware_acceleration()
+        self.encoder, self.decoder, self.capabilities = detect_hardware_acceleration(config)
         
     def create_balanced_video(self, image_files: List[str], audio_files: List[str], output_path: str, fps: int = 3) -> Tuple[bool, str]:
         """Create video with balanced performance and quality settings"""
@@ -829,7 +1121,14 @@ class BalancedFFmpegProcessor:
         except subprocess.CalledProcessError as e:
             return False, f"FFmpeg error: {e.stderr.decode() if hasattr(e, 'stderr') else str(e)}"
 
-def generate_mp4_for_lecture(lecture_data: Dict, fps: int, language: str = "English", summary: bool = False, force_create: bool = False, config: BalancedMachineConfig = None) -> Dict:
+def generate_mp4_for_lecture(
+    lecture_data: Dict,
+    fps: int,
+    language: str = "English",
+    summary: bool = False,
+    conflict_policy: str = ConflictPolicy.SKIP_SAFELY.value,
+    config: Optional[BalancedMachineConfig] = None,
+) -> Dict:
     """Generate MP4 for a lecture with balanced processing"""
     result = {
         "lecture_path": lecture_data["path"],
@@ -859,20 +1158,24 @@ def generate_mp4_for_lecture(lecture_data: Dict, fps: int, language: str = "Engl
             result["message"] = f"Count mismatch: {len(image_files)} images, {len(audio_files)} {audio_type} files"
             return result
 
-        output_path = generate_output_path(lecture_path, language)
+        output_path = generate_output_path(lecture_path, language, summary=summary)
+        existing_output_exists = os.path.exists(output_path)
+        output_decision = resolve_existing_output_action(existing_output_exists, conflict_policy)
 
-        if summary:
-            output_dir = os.path.dirname(output_path)
-            filename = os.path.basename(output_path)
-            name, ext = os.path.splitext(filename)
-            new_filename = f"{name}(summary){ext}"
-            output_path = os.path.join(output_dir, new_filename)
-
-        if not force_create and os.path.exists(output_path):
+        if output_decision["action"] == "skip":
             result["status"] = "skipped"
-            result["message"] = "MP4 file already exists (use 'Force Create MP4s' to recreate)"
+            result["message"] = output_decision["message"]
             result["output_path"] = output_path
             return result
+
+        if output_decision["action"] == "report":
+            result["status"] = "reported"
+            result["message"] = output_decision["message"]
+            result["output_path"] = output_path
+            return result
+
+        if output_decision["action"] == "render_new_output":
+            output_path = build_rerun_output_path(output_path)
 
         # Use balanced processor
         if config is None:
@@ -896,66 +1199,16 @@ def generate_mp4_for_lecture(lecture_data: Dict, fps: int, language: str = "Engl
         return result
 
 def main():
-    st.title("MP4 GPU - Final")
-    st.write("Single final MP4 page tuned for your MacBook Pro M3 Pro and Windows RTX 3050 laptop.")
-
-    # Load machine configuration
-    config = BalancedMachineConfig()
-    adaptive_settings = config.get_adaptive_optimization_settings()
-    
-    # Display system metrics and optimization info
-    with st.expander("System Profile & Optimization Settings"):
-        metrics = config.performance_monitor.get_system_metrics()
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.subheader("System Metrics")
-            st.json({
-                "Machine Profile": config.get_profile_name(),
-                "Profile ID": config.detect_current_machine(),
-                "Memory Usage (GB)": round(metrics["memory_usage_gb"], 2),
-                "Memory Available (GB)": round(metrics["memory_available_gb"], 2),
-                "Memory Usage (%)": round(metrics["memory_percent"], 1),
-                "CPU Usage (%)": round(metrics["cpu_percent"], 1),
-                "CPU Cores": metrics["cpu_count"]
-            })
-        
-        with col2:
-            st.subheader("Adaptive Settings")
-            st.json({
-                "Quality Preset": adaptive_settings.get("quality_preset", "balanced"),
-                "Processing Mode": adaptive_settings.get("processing_mode", "balanced"),
-                "Batch Size": adaptive_settings.get("batch_size", 4),
-                "Max Threads": adaptive_settings.get("max_threads", 4),
-                "Memory Limit (GB)": adaptive_settings.get("memory_limit_gb", 8)
-            })
+    st.title("10 Render MP4 Videos")
 
     ensure_directory_exists(INPUT_DIR)
     ensure_directory_exists(OUTPUT_DIR)
 
     organized_data = find_processed_lectures()
-
     if not organized_data:
         st.warning("No lectures with matching image and audio files found.")
         return
 
-    # Hardware acceleration info
-    encoder, decoder, capabilities = detect_hardware_acceleration()
-    st.header("Hardware Acceleration")
-    
-    if capabilities["hardware_encoding"]:
-        st.success(f"✅ Hardware acceleration detected: Using {encoder} for video encoding")
-        st.info(f"🎯 Performance Tier: {capabilities['performance_tier'].title()}")
-        if decoder:
-            st.info(f"🔍 Using {decoder} hardware acceleration for decoding")
-        if config.detect_current_machine() == "windows_i5_rtx3050":
-            st.info("🌙 Recommended for overnight bulk jobs on the RTX laptop.")
-    else:
-        st.info("ℹ️ No hardware acceleration detected. Using CPU encoding (libx264)")
-
-    # Language selection
-    st.header("Video Settings")
     all_languages = set()
     for subject in organized_data.values():
         for course in subject.values():
@@ -970,145 +1223,231 @@ def main():
         sorted_languages = ["English"] + sorted_languages
 
     default_language = "English" if "English" in sorted_languages else sorted_languages[0] if sorted_languages else None
-    selected_language = st.selectbox("Select Language for MP4 Generation", sorted_languages, index=sorted_languages.index(default_language) if default_language else 0)
+    selected_language = st.session_state.get("mp4_selected_language", default_language)
+    generate_regular = st.session_state.get("mp4_generate_regular", True)
+    generate_summary = st.session_state.get("mp4_generate_summary", True)
 
-    fps = 3
-    st.info(f"Using frame rate: {fps} FPS with adaptive quality/performance tuning.")
+    profile_options = {"Auto detect": None}
+    for profile_id, profile in MACHINE_PROFILES.items():
+        if profile_id == "generic_fallback":
+            continue
+        profile_options[profile["name"]] = profile_id
+    profile_options["Generic fallback"] = "generic_fallback"
 
-    # Lecture selection
-    st.header("Select Lectures for MP4 Generation")
-    
-    selected_lectures = {}
-    
-    # Quick selection interface
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("✓ Select All"):
-            st.session_state.select_all = True
+    top_cols = st.columns([1.1, 1.1, 1.1, 0.9])
+    with top_cols[0]:
+        selected_profile_label = st.selectbox(
+            "Machine profile",
+            options=list(profile_options.keys()),
+            index=0,
+            help="Use Auto detect for the current computer, or force a known machine profile.",
+            key="mp4_machine_profile_label",
+        )
+        selected_profile_id = profile_options[selected_profile_label]
+
+    with top_cols[1]:
+        conflict_policy = st.selectbox(
+            "Conflict policy",
+            options=list(CONFLICT_POLICY_LABELS.keys()),
+            format_func=lambda value: CONFLICT_POLICY_LABELS[value],
+            index=0,
+            help="Applied automatically during bulk runs. Default is safe and non-blocking for unattended runs.",
+            key="mp4_conflict_policy",
+        )
+
+    with top_cols[2]:
+        selected_language = st.selectbox(
+            "Language",
+            sorted_languages,
+            index=sorted_languages.index(selected_language) if selected_language in sorted_languages else 0,
+            key="mp4_selected_language",
+        )
+
+    config = BalancedMachineConfig(selected_profile_id)
+    machine_info = config.get_machine_info()
+    adaptive_settings = config.get_adaptive_optimization_settings()
+    encoder, decoder, capabilities = detect_hardware_acceleration(config)
+
+    inventory = build_render_inventory(
+        organized_data,
+        selected_language=selected_language,
+        generate_regular=generate_regular,
+        generate_summary=generate_summary,
+        conflict_policy=conflict_policy,
+    )
+    top_summary = build_top_summary(machine_info, encoder, inventory, CONFLICT_POLICY_LABELS[conflict_policy])
+
+    with top_cols[3]:
+        button_label = f"Run {inventory['summary']['output_count']} MP4 jobs"
+        run_clicked = st.button(
+            button_label,
+            disabled=inventory["summary"]["output_count"] == 0,
+            use_container_width=True,
+        )
+
+    metric_cols = st.columns(4)
+    for column, (label, value) in zip(metric_cols, top_summary["metrics"]):
+        with column:
+            st.metric(label, value)
+
+    st.caption(
+        f"Machine: {top_summary['machine']} | Mode: {top_summary['mode']} | Recommended encoder: {top_summary['recommended_encoder']}"
+    )
+    st.caption(
+        f"Language: {selected_language} | Conflict policy: {top_summary['conflict_policy']} | "
+        f"Outputs found: {inventory['summary']['output_count']}"
+    )
+
+    st.subheader("Settings")
+    settings_left, settings_right = st.columns(2)
+    with settings_left:
+        generate_regular = st.checkbox("Generate Regular Videos", value=generate_regular, key="mp4_generate_regular")
+        generate_summary = st.checkbox("Generate Summary Videos", value=generate_summary, key="mp4_generate_summary")
+
+    with settings_right:
+        st.write(f"Hardware encoder: {top_summary['recommended_encoder']}")
+        if capabilities["hardware_encoding"]:
+            st.success(f"Using {encoder} for encoding")
+        else:
+            st.info("Using CPU encoding (libx264)")
+
+    inventory = build_render_inventory(
+        organized_data,
+        selected_language=selected_language,
+        generate_regular=generate_regular,
+        generate_summary=generate_summary,
+        conflict_policy=conflict_policy,
+    )
+    top_summary = build_top_summary(machine_info, encoder, inventory, CONFLICT_POLICY_LABELS[conflict_policy])
+
+    st.subheader("Lecture Selection")
+    sel_col1, sel_col2 = st.columns(2)
+    with sel_col1:
+        if st.button("Select All", key="mp4_select_all"):
+            st.session_state.mp4_select_all = True
             st.rerun()
-    with col2:
-        if st.button("✗ Unselect All"):
-            st.session_state.select_all = False
+    with sel_col2:
+        if st.button("Unselect All", key="mp4_unselect_all"):
+            st.session_state.mp4_select_all = False
             st.rerun()
 
-    select_all = st.session_state.get('select_all', False)
+    select_all = st.session_state.get("mp4_select_all", False)
+    selected_lectures: Dict[Tuple[str, str, str, str], Dict[str, Any]] = {}
 
-    # Course selection
     for subject in organized_data:
         for course in organized_data[subject]:
             with st.expander(f"Course: {course}"):
-                all_in_course = st.checkbox(f"Select all in {course}", key=f"all_{subject}_{course}", value=select_all)
-                
+                all_in_course = st.checkbox(f"Select all in {course}", key=f"mp4_all_{subject}_{course}", value=select_all)
+
                 for section in organized_data[subject][course]:
                     for lecture in organized_data[subject][course][section]:
-                        lecture_data = organized_data[subject][course][section][lecture]
-                        
-                        has_language = selected_language in lecture_data.get("languages", [])
-                        if selected_language in lecture_data.get("language_data", {}):
-                            lang_data = lecture_data["language_data"][selected_language]
-                            count_match = lang_data["count_match"]
-                        else:
-                            count_match = False
+                        lecture_key = (subject, course, section, lecture)
+                        lecture_summary = inventory["lectures"].get(lecture_key)
+                        if not lecture_summary:
+                            continue
 
-                        if all_in_course and has_language and count_match:
-                            selected_lectures[(subject, course, section, lecture)] = lecture_data
+                        label = (
+                            f"{lecture}: ready {lecture_summary['ready_outputs']}, "
+                            f"processed {lecture_summary['processed_outputs']}, "
+                            f"outputs {lecture_summary['output_count']}"
+                        )
+
+                        if all_in_course and lecture_summary["ready_outputs"] > 0:
+                            selected_lectures[lecture_key] = lecture_summary
                         elif not all_in_course:
                             selected = st.checkbox(
-                                f"{lecture}: {lecture_data.get('audio_count', 0)} audio, {lecture_data.get('image_count', 0)} images",
-                                key=f"{subject}_{course}_{section}_{lecture}_{selected_language}",
-                                disabled=not (has_language and count_match)
+                                label,
+                                key=f"mp4_{subject}_{course}_{section}_{lecture}_{selected_language}",
+                                disabled=lecture_summary["ready_outputs"] == 0,
                             )
                             if selected:
-                                selected_lectures[(subject, course, section, lecture)] = lecture_data
+                                selected_lectures[lecture_key] = lecture_summary
 
-    # Generate MP4s
-    st.header("Generate MP4s")
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        generate_regular = st.checkbox("Generate Regular Videos", value=True)
-    with col2:
-        generate_summary = st.checkbox("Generate Summary Videos", value=True)
+    with st.expander("Technical Details", expanded=False):
+        metrics = config.performance_monitor.get_system_metrics()
+        st.write(f"Profile: {machine_info['machine_id']}")
+        st.write(f"Source: {machine_info['match_source']}")
+        st.write(f"Threads: {adaptive_settings.get('max_threads', 4)}")
+        st.write(f"Batch size: {adaptive_settings.get('batch_size', 4)}")
+        st.write(f"Memory limit (GB): {adaptive_settings.get('memory_limit_gb', 8)}")
+        st.write(f"Encoder: {encoder}")
+        st.write(f"Decoder: {decoder or 'CPU'}")
+        st.write(f"CPU Usage (%): {metrics['cpu_percent']:.1f}")
+        st.write(f"Memory Usage (GB): {metrics['memory_usage_gb']:.1f}")
 
-    force_create = st.checkbox("Force Create MP4s", value=False)
-
-    if st.button("Generate MP4s", disabled=len(selected_lectures) == 0 or not (generate_regular or generate_summary)):
+    if run_clicked:
         if not selected_lectures:
             st.warning("No lectures selected for MP4 generation.")
             return
-
         if not (generate_regular or generate_summary):
             st.warning("Please select at least one video type to generate.")
             return
 
-        # Process with progress tracking and adaptive monitoring
         progress_bar = st.progress(0)
         status_text = st.empty()
         metrics_text = st.empty()
         results_container = st.container()
 
-        results = []
+        actionable_jobs: List[Dict[str, Any]] = []
+        for lecture_summary in selected_lectures.values():
+            actionable_jobs.extend(
+                job for job in lecture_summary["jobs"] if job["decision"]["action"] in {"render", "render_new_output", "report", "skip"}
+            )
+
+        total_jobs = len(actionable_jobs)
+        completed_jobs = 0
+        results: List[Dict[str, Any]] = []
         start_time = time.time()
-        total_videos = len(selected_lectures) * ((1 if generate_regular else 0) + (1 if generate_summary else 0))
-        video_count = 0
 
-        for _, ((subject, course, section, lecture), lecture_data) in enumerate(selected_lectures.items()):
-            # Update adaptive settings based on current system state
-            config.performance_monitor = SystemPerformanceMonitor(config.get_memory_limit())
-            current_settings = config.get_adaptive_optimization_settings()
-            
-            if generate_regular:
-                status_text.info(f"Processing {video_count+1}/{total_videos}: {lecture} (Regular)")
-                
-                # Update system metrics display
-                metrics = config.performance_monitor.get_system_metrics()
-                metrics_text.info(f"CPU: {metrics['cpu_percent']:.1f}% | Memory: {metrics['memory_usage_gb']:.1f}GB | Mode: {current_settings['processing_mode']}")
-                
-                result = generate_mp4_for_lecture(lecture_data, fps, selected_language, summary=False, force_create=force_create, config=config)
-                result.update({"subject": subject, "course": course, "section": section, "lecture": lecture, "type": "Regular"})
-                results.append(result)
-                
-                video_count += 1
-                progress_bar.progress(video_count / total_videos)
+        for job in actionable_jobs:
+            lecture_data = job["lecture_data"]
+            status_text.info(f"Processing {completed_jobs + 1}/{total_jobs}: {job['lecture']} ({job['type']})")
+            metrics = config.performance_monitor.get_system_metrics()
+            metrics_text.info(f"CPU: {metrics['cpu_percent']:.1f}% | Memory: {metrics['memory_usage_gb']:.1f}GB | Encoder: {encoder}")
 
-            if generate_summary:
-                status_text.info(f"Processing {video_count+1}/{total_videos}: {lecture} (Summary)")
-                
-                # Update system metrics display
-                metrics = config.performance_monitor.get_system_metrics()
-                metrics_text.info(f"CPU: {metrics['cpu_percent']:.1f}% | Memory: {metrics['memory_usage_gb']:.1f}GB | Mode: {current_settings['processing_mode']}")
-                
-                result = generate_mp4_for_lecture(lecture_data, fps, selected_language, summary=True, force_create=force_create, config=config)
-                result.update({"subject": subject, "course": course, "section": section, "lecture": lecture, "type": "Summary"})
-                results.append(result)
-                
-                video_count += 1
-                progress_bar.progress(video_count / total_videos)
+            result = generate_mp4_for_lecture(
+                lecture_data,
+                fps=3,
+                language=selected_language,
+                summary=job["summary"],
+                conflict_policy=conflict_policy,
+                config=config,
+            )
+            result.update({
+                "subject": job["subject"],
+                "course": job["course"],
+                "section": job["section"],
+                "lecture": job["lecture"],
+                "type": job["type"],
+            })
+            results.append(result)
 
-        # Display results
+            completed_jobs += 1
+            progress_bar.progress(completed_jobs / total_jobs if total_jobs else 1.0)
+
         metrics_text.empty()
-        status_text.success(f"Processed {video_count} videos for {len(selected_lectures)} lectures")
-        
+        status_text.success(f"Processed {completed_jobs} MP4 jobs")
+
         with results_container:
-            st.subheader("Processing Results")
+            st.subheader("Results")
             success_count = sum(1 for r in results if r["status"] == "success")
             error_count = sum(1 for r in results if r["status"] == "error")
-            skipped_count = sum(1 for r in results if r["status"] == "skipped")
+            skipped_count = sum(1 for r in results if r["status"] in {"skipped", "reported"})
 
-            st.write(f"✅ Successfully generated: {success_count}")
-            st.write(f"⏭️ Skipped (already exists): {skipped_count}")
-            st.write(f"❌ Errors: {error_count}")
+            result_cols = st.columns(4)
+            result_cols[0].metric("Successful", success_count)
+            result_cols[1].metric("Skipped / Reported", skipped_count)
+            result_cols[2].metric("Errors", error_count)
+            elapsed = time.time() - start_time
+            result_cols[3].metric("Time (sec)", f"{elapsed:.1f}")
 
             for result in results:
-                status_icon = "✅" if result["status"] == "success" else "⏭️" if result["status"] == "skipped" else "❌"
-                video_type = result.get("type", "")
-                display_name = f"{result['subject']} - {result['course']} - {result['section']} - {result['lecture']} ({video_type})"
-
+                status_icon = "✅" if result["status"] == "success" else "⏭️" if result["status"] in {"skipped", "reported"} else "❌"
+                display_name = f"{result['course']} - {result['lecture']} ({result.get('type', '')})"
                 with st.expander(f"{status_icon} {display_name}"):
                     st.write(f"**Status:** {result['status']}")
-                    st.write(f"**Type:** {video_type}")
                     st.write(f"**Message:** {result['message']}")
-                    if result["status"] in ["success", "skipped"]:
+                    if result.get("output_path"):
                         st.write(f"**Output:** {result['output_path']}")
 
 if __name__ == "__main__":

@@ -24,11 +24,13 @@ import os
 import re
 import time
 import json
+import enum
+import platform
 import requests
 import fnmatch
 from pathlib import Path
 import glob
-from typing import Dict, List, Tuple, Optional
+from typing import Any, Dict, List, Tuple, Optional
 
 # Local utility functions (moved from multiple utils modules)
 def get_input_directory() -> str:
@@ -44,6 +46,142 @@ def ensure_directory_exists(directory_path: str) -> None:
     """Create directory if it doesn't exist"""
     if not os.path.exists(directory_path):
         os.makedirs(directory_path)
+
+
+class ConflictPolicy(str, enum.Enum):
+    SKIP_SAFELY = "skip_safely"
+    OVERWRITE = "overwrite"
+    RENDER_NEW_OUTPUT = "render_new_output"
+    REPORT_ONLY = "report_only"
+
+
+CONFLICT_POLICY_LABELS = {
+    ConflictPolicy.SKIP_SAFELY.value: "Skip safely",
+    ConflictPolicy.OVERWRITE.value: "Re-generate and overwrite",
+    ConflictPolicy.RENDER_NEW_OUTPUT.value: "Render to new output",
+    ConflictPolicy.REPORT_ONLY.value: "Report only",
+}
+
+
+MACHINE_PROFILES = {
+    "macbook_pro_m3_pro_18gb": {
+        "name": "MacBook Pro M3 Pro (18GB)",
+        "notes": "Host profile optimized for long local Kokoro runs on the MacBook.",
+        "match_rules": {
+            "platform": "darwin",
+            "architecture": ["arm64"],
+            "ram_gb_min": 16,
+            "ram_gb_max": 20,
+        },
+        "optimization_settings": {
+            "max_languages": 3,
+            "max_sections_per_batch": 24,
+            "request_timeout_sec": 180,
+        },
+    },
+    "windows_i5_12450h_rtx3050_16gb": {
+        "name": "Acer Windows laptop (i5-12450H + RTX 3050)",
+        "notes": "Host profile optimized for GPU-backed Kokoro runs on the RTX laptop.",
+        "match_rules": {
+            "platform": "windows",
+            "architecture": ["amd64", "x86_64"],
+            "ram_gb_min": 14,
+            "ram_gb_max": 18,
+        },
+        "optimization_settings": {
+            "max_languages": 2,
+            "max_sections_per_batch": 18,
+            "request_timeout_sec": 180,
+        },
+    },
+    "generic_fallback": {
+        "name": "Generic fallback profile",
+        "notes": "Fallback host profile for machines outside the two supported laptops.",
+        "match_rules": {},
+        "optimization_settings": {
+            "max_languages": 1,
+            "max_sections_per_batch": 12,
+            "request_timeout_sec": 180,
+        },
+    },
+}
+
+
+def detect_apple_silicon_capability() -> bool:
+    if platform.system() != "Darwin":
+        return False
+    try:
+        import subprocess
+        result = subprocess.run(
+            ["sysctl", "-n", "hw.optional.arm64"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        return result.returncode == 0 and result.stdout.strip() == "1"
+    except Exception:
+        return False
+
+
+def collect_host_system_info() -> Dict[str, Any]:
+    architecture = platform.machine().lower()
+    if detect_apple_silicon_capability():
+        architecture = "arm64"
+    return {
+        "hostname": platform.node().lower(),
+        "platform": platform.system().lower(),
+        "architecture": architecture,
+        "memory_gb": round((os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES")) / (1024**3)) if hasattr(os, "sysconf") else 0,
+    }
+
+
+def select_machine_profile(system_info: Dict[str, Any], profiles: Dict[str, Dict[str, Any]], override_profile_id: Optional[str] = None) -> Dict[str, Any]:
+    if override_profile_id:
+        profile = profiles.get(override_profile_id, profiles["generic_fallback"])
+        return {
+            "machine_id": override_profile_id if override_profile_id in profiles else "generic_fallback",
+            "name": profile["name"],
+            "notes": profile.get("notes", ""),
+            "match_source": "manual",
+            "match_reasons": ["Manual override selected"],
+            "profile": profile,
+            "system_info": system_info,
+        }
+
+    for machine_id, profile in profiles.items():
+        if machine_id == "generic_fallback":
+            continue
+        rules = profile.get("match_rules", {})
+        if rules.get("platform") and system_info.get("platform") != rules["platform"]:
+            continue
+        architectures = rules.get("architecture", [])
+        if architectures and system_info.get("architecture") not in architectures:
+            continue
+        ram = system_info.get("memory_gb", 0)
+        if rules.get("ram_gb_min") is not None and ram < rules["ram_gb_min"]:
+            continue
+        if rules.get("ram_gb_max") is not None and ram > rules["ram_gb_max"]:
+            continue
+        return {
+            "machine_id": machine_id,
+            "name": profile["name"],
+            "notes": profile.get("notes", ""),
+            "match_source": "auto",
+            "match_reasons": [f"platform={system_info.get('platform')}", f"architecture={system_info.get('architecture')}", f"ram={ram}GB"],
+            "profile": profile,
+            "system_info": system_info,
+        }
+
+    profile = profiles["generic_fallback"]
+    return {
+        "machine_id": "generic_fallback",
+        "name": profile["name"],
+        "notes": profile.get("notes", ""),
+        "match_source": "fallback",
+        "match_reasons": ["No configured host profile matched"],
+        "profile": profile,
+        "system_info": system_info,
+    }
 
 def clean_text_for_tts(text: str) -> str:
     """Clean text for TTS processing"""
@@ -141,6 +279,38 @@ def generate_combined_voice(voice_weights: Dict[str, float]) -> Tuple[bool, str,
     except Exception as e:
         return False, f"Error in voice combination: {str(e)}", None
 
+
+def inspect_kokoro_runtime() -> Dict[str, Any]:
+    runtime_info = {
+        "connected": False,
+        "runtime_mode": "unknown",
+        "gpu_available": False,
+        "message": "Kokoro runtime not inspected",
+    }
+    try:
+        response = requests.get(f"{KOKORO_API_URL}/debug/system", timeout=5)
+        if response.status_code != 200:
+            runtime_info["message"] = f"Kokoro debug endpoint returned status {response.status_code}"
+            return runtime_info
+
+        system_info = response.json()
+        gpu_info = system_info.get("gpu") or {}
+        devices = gpu_info.get("devices") or []
+        runtime_info["connected"] = True
+        if devices:
+            runtime_info["gpu_available"] = True
+            runtime_info["runtime_mode"] = "gpu"
+            device = devices[0]
+            runtime_info["message"] = f"Using GPU: {device.get('name', 'Unknown')} with {device.get('memory_total', 'Unknown')} memory"
+        else:
+            runtime_info["runtime_mode"] = "cpu"
+            runtime_info["message"] = "No GPU detected, using CPU for inference"
+        return runtime_info
+    except Exception as exc:
+        runtime_info["message"] = f"Error checking Kokoro runtime: {str(exc)}"
+        return runtime_info
+
+
 def convert_text_to_speech(
     text: str, 
     output_path: str, 
@@ -150,8 +320,9 @@ def convert_text_to_speech(
     speed: float = 1.0,
     enable_timestamps: bool = False,
     normalize_text: bool = True,
-    save_timestamps: bool = False
-) -> Tuple[bool, str, Optional[Dict]]:
+    save_timestamps: bool = False,
+    request_timeout_sec: int = 180,
+) -> Dict[str, Any]:
     """Convert text to speech using Kokoro's TTS API"""
     try:
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -172,11 +343,16 @@ def convert_text_to_speech(
         
         response = requests.post(
             f"{KOKORO_API_URL}/audio/speech",
-            json=params
+            json=params,
+            timeout=request_timeout_sec,
         )
         
         if response.status_code != 200:
-            return False, f"API request failed with status {response.status_code}: {response.text}", None
+            return {
+                "success": False,
+                "message": f"API request failed with status {response.status_code}: {response.text}",
+                "timestamps": None,
+            }
         
         timestamps = None
         if enable_timestamps and 'x-timestamps' in response.headers:
@@ -193,10 +369,18 @@ def convert_text_to_speech(
         with open(output_path, "wb") as f:
             f.write(response.content)
         
-        return True, "Text-to-speech conversion successful", timestamps
+        return {
+            "success": True,
+            "message": "Text-to-speech conversion successful",
+            "timestamps": timestamps,
+        }
     
     except Exception as e:
-        return False, f"Error in text-to-speech conversion: {str(e)}", None
+        return {
+            "success": False,
+            "message": f"Error in text-to-speech conversion: {str(e)}",
+            "timestamps": None,
+        }
 
 def check_connection() -> Tuple[bool, str]:
     """Check if the Kokoro API is accessible"""
@@ -215,21 +399,8 @@ def check_connection() -> Tuple[bool, str]:
         
 def check_gpu_availability() -> Tuple[bool, str]:
     """Check if the Kokoro API is using GPU"""
-    try:
-        response = requests.get(f"{KOKORO_API_URL}/debug/system", timeout=5)
-        if response.status_code == 200:
-            system_info = response.json()
-            if "gpu" in system_info and system_info["gpu"]:
-                gpu_info = system_info["gpu"]
-                if "devices" in gpu_info and gpu_info["devices"]:
-                    gpu_devices = gpu_info["devices"]
-                    return True, f"Using GPU: {gpu_devices[0].get('name', 'Unknown')} with {gpu_devices[0].get('memory_total', 'Unknown')} memory"
-                return True, "GPU is available"
-            return False, "No GPU detected, using CPU for inference"
-        else:
-            return False, "Could not determine GPU status"
-    except Exception as e:
-        return False, f"Error checking GPU status: {str(e)}"
+    runtime_info = inspect_kokoro_runtime()
+    return runtime_info["gpu_available"], runtime_info["message"]
 
 st.set_page_config(page_title="07 TTS Kokoro - Multi-Language", page_icon="📝")
 
@@ -376,6 +547,98 @@ def find_language_section_files(language: str = "English") -> Dict[str, Dict[str
     
     return language_files
 
+
+def resolve_existing_audio_action(existing_output_exists: bool, conflict_policy: str) -> Dict[str, str]:
+    if not existing_output_exists:
+        return {"action": "process", "status": "ready", "message": "Audio does not exist yet"}
+    if conflict_policy == ConflictPolicy.REPORT_ONLY.value:
+        return {"action": "report", "status": "reported", "message": "Existing audio detected; report-only mode left it unchanged"}
+    if conflict_policy == ConflictPolicy.RENDER_NEW_OUTPUT.value:
+        return {"action": "render_new_output", "status": "ready", "message": "Existing audio detected; rendering to a new filename"}
+    if conflict_policy == ConflictPolicy.OVERWRITE.value:
+        return {"action": "process", "status": "ready", "message": "Existing audio detected; output will be overwritten"}
+    return {"action": "skip", "status": "skipped", "message": "Existing audio detected; skipped safely"}
+
+
+def build_audio_inventory(language_files: Dict[str, Dict[str, Dict]], language: str, audio_format: str, conflict_policy: str) -> Dict[str, Any]:
+    jobs: List[Dict[str, Any]] = []
+    summary = {
+        "ready_count": 0,
+        "processed_count": 0,
+        "language_count": 0,
+        "section_count": 0,
+    }
+
+    for course, lectures in language_files.items():
+        for lecture, lecture_data in lectures.items():
+            lecture_base_dir = lecture_data["base_dir"]
+            transcript_audio_dir = os.path.join(lecture_base_dir, f"{language} audio")
+            summary_audio_dir = os.path.join(lecture_base_dir, f"{language} Summary audio")
+
+            lecture_jobs: List[Dict[str, Any]] = []
+            for kind, target_dir in (("transcript", transcript_audio_dir), ("summary", summary_audio_dir)):
+                section_files = lecture_data[kind]["section_files"]
+                for file_path in section_files:
+                    section_number = os.path.splitext(os.path.basename(file_path))[0]
+                    output_path = os.path.join(target_dir, f"{section_number}.{audio_format}")
+                    existing = os.path.exists(output_path) and os.path.getsize(output_path) > 0
+                    decision = resolve_existing_audio_action(existing, conflict_policy)
+                    lecture_jobs.append({
+                        "course": course,
+                        "lecture": lecture,
+                        "kind": kind,
+                        "file_path": file_path,
+                        "output_path": output_path,
+                        "decision": decision,
+                        "existing_output_exists": existing,
+                    })
+
+            if lecture_jobs:
+                summary["language_count"] = 1  # per-language inventory
+                summary["section_count"] += len(lecture_jobs)
+                summary["processed_count"] += sum(1 for job in lecture_jobs if job["existing_output_exists"])
+                summary["ready_count"] += sum(1 for job in lecture_jobs if job["decision"]["action"] in {"process", "render_new_output"})
+                jobs.extend(lecture_jobs)
+
+    return {"jobs": jobs, "summary": summary}
+
+
+def build_audio_top_summary(machine_info: Dict[str, Any], runtime_info: Dict[str, Any], inventory: Dict[str, Any], conflict_policy_label: str) -> Dict[str, Any]:
+    return {
+        "machine": machine_info["name"],
+        "mode": "GPU-backed Kokoro" if runtime_info["gpu_available"] else "CPU Kokoro",
+        "runtime_message": runtime_info["message"],
+        "conflict_policy": conflict_policy_label,
+        "metrics": [
+            ("Ready", inventory["summary"]["ready_count"]),
+            ("Processed", inventory["summary"]["processed_count"]),
+            ("Languages", inventory["summary"]["language_count"]),
+            ("Sections", inventory["summary"]["section_count"]),
+        ],
+    }
+
+
+def build_selected_language_inventory(selected_languages: List[str], audio_format: str, conflict_policy: str) -> Dict[str, Any]:
+    combined_jobs: List[Dict[str, Any]] = []
+    summary = {
+        "ready_count": 0,
+        "processed_count": 0,
+        "language_count": 0,
+        "section_count": 0,
+    }
+
+    for language in selected_languages:
+        language_files = find_language_section_files(language=language)
+        inventory = build_audio_inventory(language_files, language, audio_format, conflict_policy)
+        if inventory["jobs"]:
+            summary["language_count"] += 1
+        summary["ready_count"] += inventory["summary"]["ready_count"]
+        summary["processed_count"] += inventory["summary"]["processed_count"]
+        summary["section_count"] += inventory["summary"]["section_count"]
+        combined_jobs.extend([{**job, "language": language} for job in inventory["jobs"]])
+
+    return {"jobs": combined_jobs, "summary": summary}
+
 def generate_tts_for_sections(
     section_files: List[str],
     voice: str,
@@ -385,7 +648,10 @@ def generate_tts_for_sections(
     speed: float = 1.0,
     normalize_text: bool = True,
     enable_timestamps: bool = False,
-    save_timestamps: bool = False
+    save_timestamps: bool = False,
+    conflict_policy: str = ConflictPolicy.SKIP_SAFELY.value,
+    request_timeout_sec: int = 180,
+    max_sections_per_batch: int = 12,
 ) -> List[Dict]:
     """
     Generate TTS for a list of section files
@@ -406,103 +672,124 @@ def generate_tts_for_sections(
     """
     results = []
     
-    for file_path in section_files:
+    for batch_start in range(0, len(section_files), max_sections_per_batch):
+        batch_files = section_files[batch_start:batch_start + max_sections_per_batch]
+        for file_path in batch_files:
         # Extract section number from filename
-        section_file = os.path.basename(file_path)
-        section_number = os.path.splitext(section_file)[0]
+            section_file = os.path.basename(file_path)
+            section_number = os.path.splitext(section_file)[0]
         
         # Determine output filename
-        output_filename = f"{section_number}.{response_format}"
-        output_path = os.path.join(output_dir, output_filename)
-        
-        # Skip if output already exists and is not empty
-        if os.path.exists(output_path) and os.path.getsize(output_path) > 0:
-            results.append({
-                "success": True,
-                "file": file_path,
-                "output": output_path,
-                "status": "skipped",
-                "message": "Output file already exists",
-                "processing_time": 0,
-                "word_count": 0
-            })
-            continue
-        
-        # Read the content of the section file
-        try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                content = f.read()
-            
-            # Clean the text
-            if normalize_text:
-                content = clean_text_for_tts(content)
-            
-            # Skip empty files
-            if not content.strip():
+            output_filename = f"{section_number}.{response_format}"
+            output_path = os.path.join(output_dir, output_filename)
+
+            existing_output_exists = os.path.exists(output_path) and os.path.getsize(output_path) > 0
+            output_decision = resolve_existing_audio_action(existing_output_exists, conflict_policy)
+
+            if output_decision["action"] == "skip":
                 results.append({
                     "success": True,
                     "file": file_path,
                     "output": output_path,
                     "status": "skipped",
-                    "message": "Empty or whitespace-only file",
+                    "message": output_decision["message"],
                     "processing_time": 0,
                     "word_count": 0
                 })
                 continue
+            if output_decision["action"] == "report":
+                results.append({
+                    "success": True,
+                    "file": file_path,
+                    "output": output_path,
+                    "status": "reported",
+                    "message": output_decision["message"],
+                    "processing_time": 0,
+                    "word_count": 0
+                })
+                continue
+            if output_decision["action"] == "render_new_output":
+                output_filename = f"{section_number} (rerun {int(time.time())}).{response_format}"
+                output_path = os.path.join(output_dir, output_filename)
+        
+        # Read the content of the section file
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+            
+            # Clean the text
+                if normalize_text:
+                    content = clean_text_for_tts(content)
+            
+            # Skip empty files
+                if not content.strip():
+                    results.append({
+                        "success": True,
+                        "file": file_path,
+                        "output": output_path,
+                        "status": "skipped",
+                        "message": "Empty or whitespace-only file",
+                        "processing_time": 0,
+                        "word_count": 0
+                    })
+                    continue
             
             # Count words for statistics
-            word_count = calculate_word_count(content)
+                word_count = calculate_word_count(content)
             
             # Start timing
-            start_time = time.time()
+                start_time = time.time()
             
             # Generate speech from text
-            result = convert_text_to_speech(
-                text=content,
-                voice=voice,
-                model=model,
-                output_path=output_path,
-                response_format=response_format,
-                speed=speed,
-                enable_timestamps=enable_timestamps
-            )
+                result = convert_text_to_speech(
+                    text=content,
+                    voice=voice,
+                    model=model,
+                    output_path=output_path,
+                    response_format=response_format,
+                    speed=speed,
+                    enable_timestamps=enable_timestamps,
+                    normalize_text=normalize_text,
+                    save_timestamps=save_timestamps,
+                    request_timeout_sec=request_timeout_sec,
+                )
             
             # Stop timing
-            processing_time = time.time() - start_time
+                processing_time = time.time() - start_time
             
-            if result["success"]:
+                if result["success"]:
                 # Save timestamps if requested
-                if enable_timestamps and save_timestamps and "timestamps" in result:
-                    timestamps_path = f"{os.path.splitext(output_path)[0]}.json"
-                    with open(timestamps_path, 'w', encoding='utf-8') as f:
-                        json.dump(result["timestamps"], f, indent=2)
+                    if enable_timestamps and save_timestamps and "timestamps" in result:
+                        timestamps_path = f"{os.path.splitext(output_path)[0]}.json"
+                        with open(timestamps_path, 'w', encoding='utf-8') as f:
+                            json.dump(result["timestamps"], f, indent=2)
                 
                 # Add additional statistics
-                result["processing_time"] = processing_time
-                result["word_count"] = word_count
-                result["output"] = output_path
-                result["status"] = "processed"
+                    result["processing_time"] = processing_time
+                    result["word_count"] = word_count
+                    result["output"] = output_path
+                    result["status"] = "processed"
                 
                 # Add to results list
-                results.append(result)
-            else:
+                    results.append(result)
+                else:
                 # Add failure information
-                result["file"] = file_path
-                result["processing_time"] = processing_time
-                result["word_count"] = word_count
-                result["status"] = "failed"
-                results.append(result)
+                    result["file"] = file_path
+                    result["processing_time"] = processing_time
+                    result["word_count"] = word_count
+                    result["status"] = "failed"
+                    results.append(result)
         
-        except Exception as e:
+            except Exception as e:
             # Handle any other exceptions
-            results.append({
-                "success": False,
-                "file": file_path,
-                "status": "failed",
-                "message": f"Error: {str(e)}",
-                "processing_time": 0,
-                "word_count": 0
-            })
+                results.append({
+                    "success": False,
+                    "file": file_path,
+                    "status": "failed",
+                    "message": f"Error: {str(e)}",
+                    "processing_time": 0,
+                    "word_count": 0
+                })
     
     return results
 
@@ -870,6 +1157,298 @@ def main():
             st.write(f"- Total files processed: {total_files}")
             st.write(f"- Overall success rate: {overall_success_rate:.1f}%")
             st.write(f"- Total processing time: {(time.time() - overall_start_time):.2f} seconds")
+
+def main():
+    st.title("07 Generate Audio with Kokoro")
+
+    connection_status, connection_message = check_connection()
+    if not connection_status:
+        st.error(f"Cannot connect to Kokoro API: {connection_message}")
+        st.info("Please ensure the Kokoro TTS server is running at http://localhost:8880")
+        return
+
+    runtime_info = inspect_kokoro_runtime()
+    all_voices = get_available_voices()
+    voices_by_language = get_voices_by_language()
+    voice_options = {v["id"]: f"{v['name']} ({v['gender']})" for v in all_voices}
+    supported_languages = [lang for lang in voices_by_language.keys() if voices_by_language[lang]]
+
+    if "language_settings" not in st.session_state:
+        st.session_state.language_settings = {}
+
+    current_audio_format = st.session_state.get("audio_format", "mp3")
+
+    top_cols = st.columns([1.2, 1.2, 0.9])
+    profile_options = {"Auto detect": None}
+    for profile_id, profile in MACHINE_PROFILES.items():
+        if profile_id == "generic_fallback":
+            continue
+        profile_options[profile["name"]] = profile_id
+    profile_options["Generic fallback"] = "generic_fallback"
+
+    with top_cols[0]:
+        selected_profile_label = st.selectbox(
+            "Machine profile",
+            options=list(profile_options.keys()),
+            index=0,
+            key="kokoro_machine_profile_label",
+        )
+        selected_profile_id = profile_options[selected_profile_label]
+
+    machine_info = select_machine_profile(collect_host_system_info(), MACHINE_PROFILES, selected_profile_id)
+    host_settings = machine_info["profile"]["optimization_settings"]
+
+    with top_cols[1]:
+        conflict_policy = st.selectbox(
+            "Conflict policy",
+            options=list(CONFLICT_POLICY_LABELS.keys()),
+            format_func=lambda value: CONFLICT_POLICY_LABELS[value],
+            index=0,
+            key="kokoro_conflict_policy",
+        )
+
+    selected_languages = []
+    for lang in supported_languages:
+        if st.session_state.get(f"lang_select_{lang}", lang in st.session_state.language_settings):
+            selected_languages.append(lang)
+
+    for lang in selected_languages:
+        if lang not in st.session_state.language_settings:
+            lang_voices = voices_by_language.get(lang, [])
+            default_voice = lang_voices[0]["id"] if lang_voices else list(voice_options.keys())[0]
+            st.session_state.language_settings[lang] = {
+                "voice": default_voice,
+                "speed": 1.0,
+                "normalize": True,
+            }
+    for lang in list(st.session_state.language_settings.keys()):
+        if lang not in selected_languages:
+            del st.session_state.language_settings[lang]
+
+    inventory = build_selected_language_inventory(selected_languages, current_audio_format, conflict_policy)
+    top_summary = build_audio_top_summary(
+        machine_info=machine_info,
+        runtime_info=runtime_info,
+        inventory=inventory,
+        conflict_policy_label=CONFLICT_POLICY_LABELS[conflict_policy],
+    )
+
+    with top_cols[2]:
+        button_label = f"Process {inventory['summary']['ready_count']} Sections"
+        run_clicked = st.button(button_label, disabled=inventory["summary"]["section_count"] == 0, use_container_width=True)
+
+    metric_cols = st.columns(4)
+    for column, (label, value) in zip(metric_cols, top_summary["metrics"]):
+        with column:
+            st.metric(label, value)
+
+    st.caption(
+        f"Machine: {top_summary['machine']} | Mode: {top_summary['mode']} | "
+        f"Kokoro runtime: {runtime_info['runtime_mode'].upper()} | Conflict policy: {top_summary['conflict_policy']}"
+    )
+    st.caption(top_summary["runtime_message"])
+
+    st.subheader("Settings")
+    settings_left, settings_right = st.columns([1, 1])
+    with settings_left:
+        st.write("**Languages**")
+        language_cols = st.columns(3)
+        for i, lang in enumerate(supported_languages):
+            with language_cols[i % 3]:
+                st.checkbox(
+                    lang,
+                    value=lang in st.session_state.language_settings,
+                    key=f"lang_select_{lang}",
+                )
+
+        audio_format = st.selectbox(
+            "Audio format",
+            options=["mp3", "wav"],
+            index=0 if current_audio_format == "mp3" else 1,
+            key="audio_format",
+        )
+        generate_timestamps = st.checkbox("Generate word timestamps", value=st.session_state.get("generate_timestamps", False), key="generate_timestamps")
+        save_timestamps = False
+        if generate_timestamps:
+            save_timestamps = st.checkbox("Save timestamps to JSON", value=st.session_state.get("save_timestamps", True), key="save_timestamps")
+
+    with settings_right:
+        st.write("**Per-language settings**")
+        if st.session_state.language_settings:
+            for language, settings in list(st.session_state.language_settings.items()):
+                with st.expander(f"{language} Settings", expanded=False):
+                    language_voice_options = {voice["id"]: f"{voice['name']} ({voice['gender']})" for voice in voices_by_language.get(language, [])}
+                    if not language_voice_options:
+                        language_voice_options = voice_options
+                    voice_options_list = list(language_voice_options.keys())
+                    selected_index = voice_options_list.index(settings["voice"]) if settings["voice"] in voice_options_list else 0
+
+                    voice = st.selectbox(
+                        "Voice",
+                        options=voice_options_list,
+                        format_func=lambda x: language_voice_options[x],
+                        index=selected_index,
+                        key=f"voice_{language}",
+                    )
+                    st.session_state.language_settings[language]["voice"] = voice
+
+                    speed = st.slider(
+                        "Speed",
+                        min_value=0.5,
+                        max_value=2.0,
+                        value=settings["speed"],
+                        step=0.1,
+                        key=f"speed_{language}",
+                    )
+                    st.session_state.language_settings[language]["speed"] = speed
+
+                    normalize = st.checkbox(
+                        "Normalize Text",
+                        value=settings["normalize"],
+                        key=f"normalize_{language}",
+                    )
+                    st.session_state.language_settings[language]["normalize"] = normalize
+        else:
+            st.info("Select at least one language to configure per-language voice settings.")
+
+    with st.expander("Technical Details", expanded=False):
+        st.write(f"Host profile: {machine_info['machine_id']}")
+        st.write(f"Match source: {machine_info['match_source']}")
+        st.write(f"Max languages: {host_settings['max_languages']}")
+        st.write(f"Max sections per batch: {host_settings['max_sections_per_batch']}")
+        st.write(f"Request timeout (sec): {host_settings['request_timeout_sec']}")
+        if machine_info["match_reasons"]:
+            st.write("Match reasons:")
+            for reason in machine_info["match_reasons"]:
+                st.write(f"• {reason}")
+
+    with st.expander("Help", expanded=False):
+        st.write("The page generates transcript and summary audio for the selected languages using the local Kokoro API.")
+        st.write("Default conflict behavior is safe for unattended overnight runs.")
+
+    if run_clicked:
+        enabled_languages = list(st.session_state.language_settings.keys())
+        if not enabled_languages:
+            st.error("No languages selected. Please select at least one language.")
+            return
+
+        main_progress_bar = st.progress(0)
+        main_status = st.empty()
+        language_status_container = st.container()
+        results_container = st.container()
+
+        all_language_results: Dict[str, List[Dict[str, Any]]] = {}
+        total_sections = max(1, inventory["summary"]["section_count"])
+        processed_sections = 0
+        overall_start_time = time.time()
+
+        for language in enabled_languages:
+            lang_settings = st.session_state.language_settings[language]
+            language_files = find_language_section_files(language=language)
+            language_inventory = build_audio_inventory(language_files, language, audio_format, conflict_policy)
+            language_results: List[Dict[str, Any]] = []
+            language_total = max(1, language_inventory["summary"]["section_count"])
+            language_processed = 0
+            language_start = time.time()
+
+            with language_status_container:
+                st.subheader(f"Processing {language}")
+                language_progress = st.progress(0)
+                language_status = st.empty()
+
+            for course, lectures in language_files.items():
+                for lecture, lecture_data in lectures.items():
+                    language_status.info(f"Processing {course} - {lecture}")
+                    lecture_base_dir = lecture_data["base_dir"]
+                    transcript_audio_dir = os.path.join(lecture_base_dir, f"{language} audio")
+                    summary_audio_dir = os.path.join(lecture_base_dir, f"{language} Summary audio")
+                    os.makedirs(transcript_audio_dir, exist_ok=True)
+                    os.makedirs(summary_audio_dir, exist_ok=True)
+
+                    if lecture_data["transcript"]["section_files"]:
+                        transcript_results = generate_tts_for_sections(
+                            section_files=lecture_data["transcript"]["section_files"],
+                            voice=lang_settings["voice"],
+                            model="kokoro",
+                            output_dir=transcript_audio_dir,
+                            response_format=audio_format,
+                            speed=lang_settings["speed"],
+                            normalize_text=lang_settings["normalize"],
+                            enable_timestamps=generate_timestamps,
+                            save_timestamps=save_timestamps,
+                            conflict_policy=conflict_policy,
+                            request_timeout_sec=host_settings["request_timeout_sec"],
+                            max_sections_per_batch=host_settings["max_sections_per_batch"],
+                        )
+                        language_results.extend(transcript_results)
+                        language_processed += len(transcript_results)
+                        processed_sections += len(transcript_results)
+
+                    if lecture_data["summary"]["section_files"]:
+                        summary_results = generate_tts_for_sections(
+                            section_files=lecture_data["summary"]["section_files"],
+                            voice=lang_settings["voice"],
+                            model="kokoro",
+                            output_dir=summary_audio_dir,
+                            response_format=audio_format,
+                            speed=lang_settings["speed"],
+                            normalize_text=lang_settings["normalize"],
+                            enable_timestamps=generate_timestamps,
+                            save_timestamps=save_timestamps,
+                            conflict_policy=conflict_policy,
+                            request_timeout_sec=host_settings["request_timeout_sec"],
+                            max_sections_per_batch=host_settings["max_sections_per_batch"],
+                        )
+                        language_results.extend(summary_results)
+                        language_processed += len(summary_results)
+                        processed_sections += len(summary_results)
+
+                    language_progress.progress(language_processed / language_total)
+                    main_progress_bar.progress(processed_sections / total_sections)
+
+                    elapsed_language_time = time.time() - language_start
+                    if language_processed > 0:
+                        sections_per_second = language_processed / elapsed_language_time
+                        remaining_sections = language_total - language_processed
+                        eta_seconds = remaining_sections / sections_per_second if sections_per_second > 0 else 0
+                        minutes, seconds = divmod(int(eta_seconds), 60)
+                        language_status.text(f"Progress: {language_processed}/{language_total} sections. ETA: {minutes}m {seconds}s")
+
+                    elapsed_overall = time.time() - overall_start_time
+                    if processed_sections > 0:
+                        sections_per_second = processed_sections / elapsed_overall
+                        remaining = total_sections - processed_sections
+                        eta_seconds = remaining / sections_per_second if sections_per_second > 0 else 0
+                        eta_minutes, eta_seconds = divmod(int(eta_seconds), 60)
+                        main_status.text(f"Overall progress: {processed_sections}/{total_sections} sections. ETA: {eta_minutes}m {eta_seconds}s")
+
+            language_progress.progress(1.0)
+            language_status.success(f"{language} processing complete: {language_processed} sections handled")
+            all_language_results[language] = language_results
+
+        main_progress_bar.progress(1.0)
+        main_status.success(f"All {len(enabled_languages)} languages handled successfully")
+
+        with results_container:
+            st.subheader("Results")
+            total_files = sum(len(results) for results in all_language_results.values())
+            total_processed = sum(sum(1 for r in results if r["status"] == "processed") for results in all_language_results.values())
+            total_skipped = sum(sum(1 for r in results if r["status"] in {"skipped", "reported"}) for results in all_language_results.values())
+            total_failed = sum(sum(1 for r in results if r["status"] == "failed") for results in all_language_results.values())
+
+            result_cols = st.columns(4)
+            result_cols[0].metric("Processed", total_processed)
+            result_cols[1].metric("Skipped / Reported", total_skipped)
+            result_cols[2].metric("Failed", total_failed)
+            result_cols[3].metric("Files handled", total_files)
+
+            for language, results in all_language_results.items():
+                with st.expander(f"{language} Results"):
+                    for result in results:
+                        status_icon = "✅" if result["status"] == "processed" else "⏭️" if result["status"] in {"skipped", "reported"} else "❌"
+                        file_name = os.path.basename(result["file"])
+                        st.write(f"{status_icon} {file_name}: {result['message']}")
+
 
 if __name__ == "__main__":
     main()
