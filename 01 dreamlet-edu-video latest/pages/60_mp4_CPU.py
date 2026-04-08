@@ -4,6 +4,22 @@ CODING CONVENTION: NO SHARED CODE
 - Never import from other page files or create shared utilities
 - Copy any needed functions directly into this file
 - Each page is completely self-contained and independent
+
+STATUS: LEGACY
+PURPOSE: Older CPU-only MP4 generation page retained as a fallback reference path.
+MAIN INPUTS:
+- lecture image folders
+- lecture audio folders
+MAIN OUTPUTS:
+- MP4 files written under `output/`
+REQUIRED CONFIG / ASSETS:
+- `input/` and `output/` directories
+EXTERNAL SERVICES:
+- local `ffmpeg` / `ffprobe`
+HARDWARE ASSUMPTIONS:
+- CPU-only rendering path
+REPLACED BY:
+- `pages/10.py`
 """
 
 import streamlit as st

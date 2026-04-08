@@ -4,6 +4,19 @@ CODING CONVENTION: NO SHARED CODE
 - Never import from other page files or create shared utilities
 - Copy any needed functions directly into this file
 - Each page is completely self-contained and independent
+
+STATUS: CURRENT
+PURPOSE: Delete selected folder types across lecture trees as a maintenance and recovery utility.
+MAIN INPUTS:
+- lecture folder trees under `input/`
+MAIN OUTPUTS:
+- matching subfolders removed in place
+REQUIRED CONFIG / ASSETS:
+- `input/` directory
+EXTERNAL SERVICES:
+- none
+HARDWARE ASSUMPTIONS:
+- none
 """
 
 import streamlit as st

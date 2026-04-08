@@ -4,6 +4,23 @@ CODING CONVENTION: NO SHARED CODE
 - Never import from other page files or create shared utilities
 - Copy any needed functions directly into this file
 - Each page is completely self-contained and independent
+
+STATUS: LEGACY
+PURPOSE: Older 4K image generation page for PPTX-based lecture assets.
+MAIN INPUTS:
+- PPTX presentation files under `input/`
+MAIN OUTPUTS:
+- 4K image folders written into lecture working directories
+REQUIRED CONFIG / ASSETS:
+- `config/logo.png`
+- `config/copyright.txt`
+EXTERNAL SERVICES:
+- local `libreoffice`
+- `pdf2image` / Poppler for PDF conversion paths
+HARDWARE ASSUMPTIONS:
+- none
+REPLACED BY:
+- `pages/06.py`
 """
 
 import streamlit as st

@@ -4,6 +4,19 @@ CODING CONVENTION: NO SHARED CODE
 - Never import from other page files or create shared utilities
 - Copy any needed functions directly into this file
 - Each page is completely self-contained and independent
+
+STATUS: CURRENT
+PURPOSE: Generate lecture audio from section text using the local Kokoro TTS service.
+MAIN INPUTS:
+- section text files under lecture folders in `input/`
+MAIN OUTPUTS:
+- generated audio files for regular and summary narration
+REQUIRED CONFIG / ASSETS:
+- running Kokoro TTS service
+EXTERNAL SERVICES:
+- Kokoro API at `http://localhost:8880`
+HARDWARE ASSUMPTIONS:
+- local machine may use CPU or GPU depending on Kokoro server setup
 """
 
 import streamlit as st

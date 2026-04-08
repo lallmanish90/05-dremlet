@@ -4,6 +4,19 @@ CODING CONVENTION: NO SHARED CODE
 - Never import from other page files or create shared utilities
 - Copy any needed functions directly into this file
 - Each page is completely self-contained and independent
+
+STATUS: CURRENT
+PURPOSE: Standardize lecture file names into the naming scheme expected by the rest of the pipeline.
+MAIN INPUTS:
+- lecture folders and source files under `input/`
+MAIN OUTPUTS:
+- renamed files and optional cleanup actions applied in place
+REQUIRED CONFIG / ASSETS:
+- `input/` directory
+EXTERNAL SERVICES:
+- none
+HARDWARE ASSUMPTIONS:
+- none
 """
 
 import streamlit as st

@@ -4,6 +4,20 @@ CODING CONVENTION: NO SHARED CODE
 - Never import from other page files or create shared utilities
 - Copy any needed functions directly into this file
 - Each page is completely self-contained and independent
+
+STATUS: CURRENT
+PURPOSE: Translate lecture content using an LM Studio-compatible local OpenAI API endpoint.
+MAIN INPUTS:
+- lecture text content under `input/`
+- selected target languages
+MAIN OUTPUTS:
+- translated text written back into lecture workflow folders
+REQUIRED CONFIG / ASSETS:
+- `config/prompt.txt`
+EXTERNAL SERVICES:
+- local LM Studio OpenAI-compatible API
+HARDWARE ASSUMPTIONS:
+- depends on the machine hosting the LM Studio model
 """
 
 import streamlit as st

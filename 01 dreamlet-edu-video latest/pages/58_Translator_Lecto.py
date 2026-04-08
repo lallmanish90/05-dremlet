@@ -4,6 +4,23 @@ CODING CONVENTION: NO SHARED CODE
 - Never import from other page files or create shared utilities
 - Copy any needed functions directly into this file
 - Each page is completely self-contained and independent
+
+STATUS: LEGACY
+PURPOSE: Older Lecto-based translation page retained as an alternate legacy backend.
+MAIN INPUTS:
+- lecture text content under `input/`
+- selected target languages
+MAIN OUTPUTS:
+- translated text written back into lecture workflow folders
+REQUIRED CONFIG / ASSETS:
+- valid Lecto credentials if used
+EXTERNAL SERVICES:
+- Lecto translation API
+HARDWARE ASSUMPTIONS:
+- none
+REPLACED BY:
+- `pages/08_Ollama.py`
+- `pages/08_Translator_LM_Studio.py`
 """
 
 import streamlit as st

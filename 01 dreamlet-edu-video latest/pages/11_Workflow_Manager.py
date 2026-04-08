@@ -5,6 +5,22 @@ CODING CONVENTION: NO SHARED CODE
 - Copy any needed functions directly into this file
 - Each page is completely self-contained and independent
 
+STATUS: CURRENT
+PURPOSE: Create, save, and run workflow templates for batch execution of the current page pipeline.
+MAIN INPUTS:
+- workflow definitions
+- selected projects and lecture folders under `input/`
+MAIN OUTPUTS:
+- workflow templates, workflow state, and checkpoints stored under `.streamlit/`
+REQUIRED CONFIG / ASSETS:
+- `.streamlit/workflow_state`
+- `.streamlit/workflow_templates`
+- `.streamlit/checkpoints`
+EXTERNAL SERVICES:
+- none
+HARDWARE ASSUMPTIONS:
+- none
+
 UX Enhancement: Advanced Workflow Configuration and Template Management
 Purpose: Manage workflow templates, batch processing, and automated workflows
 Requirements: UX-001 (Comprehensive Workflow Management)

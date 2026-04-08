@@ -5,6 +5,22 @@ CODING CONVENTION: NO SHARED CODE
 - Copy any needed functions directly into this file
 - Each page is completely self-contained and independent
 
+STATUS: CURRENT
+PURPOSE: Generate branded 4K images from PPTX presentations or ZIP image archives.
+MAIN INPUTS:
+- PPTX and ZIP presentation assets under `input/`
+MAIN OUTPUTS:
+- 4K image folders written into lecture working directories
+REQUIRED CONFIG / ASSETS:
+- `config/logo.png`
+- `config/copyright.txt`
+EXTERNAL SERVICES:
+- local `libreoffice`
+- `pdf2image` / Poppler for PDF conversion paths
+HARDWARE ASSUMPTIONS:
+- optional CUDA acceleration on the RTX machine
+- optimized CPU path on the MacBook Pro M3 Pro
+
 4K IMAGE (PPTX & ZIP) - FINAL
 Machine-aware final version for:
 - MacBook Pro M3 Pro (18GB) using an Apple Silicon optimized CPU path

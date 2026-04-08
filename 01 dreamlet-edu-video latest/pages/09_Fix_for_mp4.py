@@ -4,6 +4,19 @@ CODING CONVENTION: NO SHARED CODE
 - Never import from other page files or create shared utilities
 - Copy any needed functions directly into this file
 - Each page is completely self-contained and independent
+
+STATUS: CURRENT
+PURPOSE: Repair lecture folders so they satisfy the prerequisites required by MP4 generation.
+MAIN INPUTS:
+- lecture image and audio folders under `input/`
+MAIN OUTPUTS:
+- corrected lecture folder contents ready for MP4 generation
+REQUIRED CONFIG / ASSETS:
+- `input/` directory
+EXTERNAL SERVICES:
+- none
+HARDWARE ASSUMPTIONS:
+- none
 """
 
 import streamlit as st

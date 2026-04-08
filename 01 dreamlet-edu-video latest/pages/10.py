@@ -5,6 +5,21 @@ CODING CONVENTION: NO SHARED CODE
 - Copy any needed functions directly into this file
 - Each page is completely self-contained and independent
 
+STATUS: CURRENT
+PURPOSE: Generate final MP4 lecture videos from image/audio pairs with machine-aware acceleration.
+MAIN INPUTS:
+- lecture image folders
+- lecture audio folders
+MAIN OUTPUTS:
+- MP4 files written under `output/`
+REQUIRED CONFIG / ASSETS:
+- `input/` and `output/` directories
+EXTERNAL SERVICES:
+- local `ffmpeg` / `ffprobe`
+HARDWARE ASSUMPTIONS:
+- VideoToolbox on the MacBook Pro M3 Pro
+- NVENC when available on the RTX machine
+
 MP4 GPU - FINAL
 Single final MP4 page tuned for:
 - MacBook Pro M3 Pro (18GB) with VideoToolbox

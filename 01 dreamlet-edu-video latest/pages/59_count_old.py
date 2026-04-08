@@ -4,29 +4,153 @@ CODING CONVENTION: NO SHARED CODE
 - Never import from other page files or create shared utilities
 - Copy any needed functions directly into this file
 - Each page is completely self-contained and independent
+
+STATUS: LEGACY
+PURPOSE: Older lecture count and discrepancy page retained for reference.
+MAIN INPUTS:
+- lecture folders and generated assets under `input/`
+MAIN OUTPUTS:
+- count and discrepancy summaries shown in the UI
+REQUIRED CONFIG / ASSETS:
+- `input/` directory
+EXTERNAL SERVICES:
+- none
+HARDWARE ASSUMPTIONS:
+- none
+REPLACED BY:
+- `pages/09_Count_new.py`
 """
 
 import streamlit as st
 import os
 import re
 import time
+import fnmatch
 import pandas as pd
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 import pptx
 
-# Import utility functions
+# Local utility functions (moved from multiple utils modules)
+def get_input_directory() -> str:
+    """Get the path to the input directory"""
+    return os.path.join(os.getcwd(), "input")
 
-    get_input_directory,
-    find_transcript_files,
-    find_slide_files,
-    find_presentation_files,
-    group_files_by_lecture,
-    extract_course_lecture_section
-)
+def find_files(directory: str, pattern: str) -> List[str]:
+    """Find all files matching a pattern in a directory recursively."""
+    result = []
+    for root, _, filenames in os.walk(directory):
+        for filename in fnmatch.filter(filenames, pattern):
+            result.append(os.path.join(root, filename))
+    return result
 
-    count_slides_in_transcript,
-    count_slides_in_slide_file
-)
+def find_transcript_files(directory: str) -> List[str]:
+    """Find transcript files used in lecture processing."""
+    transcripts = []
+    patterns = ["Lecture*.txt", "Lecture*.md", "*lecture*.txt", "*lecture*.md", "*transcript*.txt", "*transcript*.md"]
+    for pattern in patterns:
+        transcripts.extend(find_files(directory, pattern))
+    return list(set([f for f in transcripts if "slide" not in os.path.basename(f).lower()]))
+
+def find_slide_files(directory: str) -> List[str]:
+    """Find slide description files."""
+    slides = []
+    patterns = ["*-slides.txt", "*-slides.md", "*slide*.txt", "*slide*.md"]
+    for pattern in patterns:
+        slides.extend(find_files(directory, pattern))
+    return list(set(slides))
+
+def find_presentation_files(directory: str) -> List[str]:
+    """Find presentation files."""
+    return find_files(directory, "*.pptx")
+
+def extract_course_lecture_section(file_path: str) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    """Extract course, lecture, and section information from a file path."""
+    dir_parts = os.path.normpath(file_path).split(os.sep)
+    course, lecture, section = None, None, None
+
+    for part in dir_parts:
+        if not course:
+            course_match = re.search(r'course\s*(\d+)', part.lower())
+            if course_match:
+                course = course_match.group(1)
+
+    filename = os.path.basename(file_path)
+    for pattern in [r'lecture\s*(\d+)', r'lec\s*(\d+)', r'^(\d+)[-\s]']:
+        lecture_match = re.search(pattern, filename.lower())
+        if lecture_match:
+            lecture = lecture_match.group(1)
+            break
+
+    return course, lecture, section
+
+def group_files_by_lecture(
+    transcripts: List[str],
+    slides: List[str],
+    presentations: List[str],
+) -> Dict[str, Dict[str, Optional[str]]]:
+    """Group transcript, slide, and presentation files by course and lecture."""
+    groups: Dict[str, Dict[str, Optional[str]]] = {}
+
+    def add_file(file_path: str, file_type: str) -> None:
+        course, lecture, _ = extract_course_lecture_section(file_path)
+        if not lecture:
+            return
+
+        lecture_id = lecture.zfill(2)
+        lecture_key = f"Course {course} - Lecture {lecture_id}" if course else f"Lecture {lecture_id}"
+        if lecture_key not in groups:
+            groups[lecture_key] = {"transcript": None, "slide": None, "presentation": None}
+        groups[lecture_key][file_type] = file_path
+
+    for transcript in transcripts:
+        add_file(transcript, "transcript")
+    for slide in slides:
+        add_file(slide, "slide")
+    for presentation in presentations:
+        add_file(presentation, "presentation")
+
+    return groups
+
+def count_slides_in_transcript(text: str) -> int:
+    """Count the number of slides in a transcript file."""
+    patterns = [r'\[Slide\s+(\d+)', r'Slide\s+(\d+)', r'##\s*Slide\s+(\d+)']
+    slides = set()
+    for pattern in patterns:
+        matches = re.findall(pattern, text, re.IGNORECASE)
+        slides.update(matches)
+    return len(slides)
+
+def count_slides_in_slide_file(text: str) -> int:
+    """Count the number of slides in a slide description file."""
+    patterns = [r'Slide\s+\d+\s*[:-]', r'^\s*\d+\s*[:-]', r'^\s*\[Slide\s+\d+\]']
+    count = 0
+    for line in text.split('\n'):
+        for pattern in patterns:
+            if re.search(pattern, line, re.IGNORECASE):
+                count += 1
+                break
+    return count
+
+def count_slides_in_pptx(pptx_path: str) -> Tuple[bool, int]:
+    """Count slides in a PPTX presentation."""
+    try:
+        if not os.path.exists(pptx_path):
+            return False, 0
+        presentation = pptx.Presentation(pptx_path)
+        return True, len(presentation.slides)
+    except Exception:
+        try:
+            import zipfile
+
+            with zipfile.ZipFile(pptx_path, 'r') as zip_ref:
+                slide_files = [
+                    file_name
+                    for file_name in zip_ref.namelist()
+                    if file_name.startswith('ppt/slides/slide') and file_name.endswith('.xml')
+                ]
+            return True, len(slide_files)
+        except Exception:
+            return False, 0
 
 
 st.set_page_config(page_title="05 Count - Dreamlet", page_icon="🔢", layout="wide")

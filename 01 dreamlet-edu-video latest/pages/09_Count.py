@@ -5,6 +5,21 @@ CODING CONVENTION: NO SHARED CODE
 - Never import from other page files or create shared utilities
 - Copy any needed functions directly into this file
 - Each page is completely self-contained and independent
+
+STATUS: LEGACY
+PURPOSE: Older lecture artifact verification and count page.
+MAIN INPUTS:
+- lecture folders and generated assets under `input/`
+MAIN OUTPUTS:
+- count and discrepancy summaries shown in the UI
+REQUIRED CONFIG / ASSETS:
+- `input/` directory
+EXTERNAL SERVICES:
+- optional document-processing tools used during validation
+HARDWARE ASSUMPTIONS:
+- none
+REPLACED BY:
+- `pages/09_Count_new.py`
 """
 
 import streamlit as st

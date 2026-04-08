@@ -4,6 +4,19 @@ CODING CONVENTION: NO SHARED CODE
 - Never import from other page files or create shared utilities
 - Copy any needed functions directly into this file
 - Each page is completely self-contained and independent
+
+STATUS: LEGACY
+PURPOSE: Sidebar grouping page that introduces older, superseded pages retained for reference.
+MAIN INPUTS:
+- none
+MAIN OUTPUTS:
+- legacy page grouping and explanatory UI
+REQUIRED CONFIG / ASSETS:
+- none
+EXTERNAL SERVICES:
+- none
+HARDWARE ASSUMPTIONS:
+- none
 """
 
 import streamlit as st

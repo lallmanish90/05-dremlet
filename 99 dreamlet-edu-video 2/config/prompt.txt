@@ -1,3 +1,0 @@
-Please translate the following English text into {TARGET_LANGUAGE}, maintaining the original tone, paragraph structure, and terminology. Do not include commentary, notes, or explanations—just provide a clean, accurate translation that preserves the meaning, especially for technical, legal, regulatory, or industry-specific terms. This is for a video transcript, so clarity and natural flow are important.
-
-{TEXT_CONTENT}

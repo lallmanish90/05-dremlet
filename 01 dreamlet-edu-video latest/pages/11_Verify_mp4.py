@@ -4,6 +4,21 @@ CODING CONVENTION: NO SHARED CODE
 - Never import from other page files or create shared utilities
 - Copy any needed functions directly into this file
 - Each page is completely self-contained and independent
+
+STATUS: CURRENT
+PURPOSE: Verify generated MP4 files and surface mismatches, missing outputs, or duration problems.
+MAIN INPUTS:
+- generated MP4 files under `output/`
+- source lecture structure under `input/`
+MAIN OUTPUTS:
+- verification summaries and mismatch reports shown in the UI
+REQUIRED CONFIG / ASSETS:
+- `input/` and `output/` directories
+- optional `config/mp4_verification.json`
+EXTERNAL SERVICES:
+- local `ffmpeg` / `ffprobe`
+HARDWARE ASSUMPTIONS:
+- none
 """
 
 import streamlit as st

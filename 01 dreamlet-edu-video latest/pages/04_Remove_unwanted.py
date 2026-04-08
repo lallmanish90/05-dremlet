@@ -4,6 +4,19 @@ CODING CONVENTION: NO SHARED CODE
 - Never import from other page files or create shared utilities
 - Copy any needed functions directly into this file
 - Each page is completely self-contained and independent
+
+STATUS: CURRENT
+PURPOSE: Remove unwanted or low-value files from lecture folders before later processing steps.
+MAIN INPUTS:
+- lecture folders and source artifacts under `input/`
+MAIN OUTPUTS:
+- filtered folder contents with unwanted files removed in place
+REQUIRED CONFIG / ASSETS:
+- `input/` directory
+EXTERNAL SERVICES:
+- none
+HARDWARE ASSUMPTIONS:
+- none
 """
 
 import streamlit as st

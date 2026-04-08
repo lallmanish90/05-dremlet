@@ -4,6 +4,20 @@ CODING CONVENTION: NO SHARED CODE
 - Never import from other page files or create shared utilities
 - Copy any needed functions directly into this file
 - Each page is completely self-contained and independent
+
+STATUS: CURRENT
+PURPOSE: Translate lecture content using a local Ollama model backend.
+MAIN INPUTS:
+- lecture text content under `input/`
+- selected target languages
+MAIN OUTPUTS:
+- translated text written back into lecture workflow folders
+REQUIRED CONFIG / ASSETS:
+- `config/prompt.txt`
+EXTERNAL SERVICES:
+- Ollama API at `http://127.0.0.1:11434/api`
+HARDWARE ASSUMPTIONS:
+- depends on the local machine running the Ollama model
 """
 
 import streamlit as st

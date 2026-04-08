@@ -4,6 +4,21 @@ CODING CONVENTION: NO SHARED CODE
 - Never import from other page files or create shared utilities
 - Copy any needed functions directly into this file
 - Each page is completely self-contained and independent
+
+STATUS: BACKUP
+PURPOSE: Backup copy of the rename page retained for rollback and reference.
+MAIN INPUTS:
+- lecture folders and source files under `input/`
+MAIN OUTPUTS:
+- renamed files and optional cleanup actions applied in place
+REQUIRED CONFIG / ASSETS:
+- `input/` directory
+EXTERNAL SERVICES:
+- none
+HARDWARE ASSUMPTIONS:
+- none
+REPLACED BY:
+- `pages/02_Rename.py`
 """
 
 import streamlit as st

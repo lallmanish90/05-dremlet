@@ -5,6 +5,19 @@ CODING CONVENTION: NO SHARED CODE
 - Copy any needed functions directly into this file
 - Each page is completely self-contained and independent
 
+STATUS: CURRENT
+PURPOSE: Verify that lecture artifacts, text sections, and presentation outputs are aligned before video generation.
+MAIN INPUTS:
+- lecture folders and generated assets under `input/`
+MAIN OUTPUTS:
+- verification results shown in the UI for manual follow-up
+REQUIRED CONFIG / ASSETS:
+- `input/` directory
+EXTERNAL SERVICES:
+- optional local document conversion tools during verification
+HARDWARE ASSUMPTIONS:
+- none
+
 Improved File Verification System
 Replaces the complex 09_Count.py with a cleaner, more maintainable architecture
 """

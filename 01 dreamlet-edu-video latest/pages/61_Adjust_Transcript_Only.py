@@ -4,6 +4,21 @@ CODING CONVENTION: NO SHARED CODE
 - Never import from other page files or create shared utilities
 - Copy any needed functions directly into this file
 - Each page is completely self-contained and independent
+
+STATUS: LEGACY
+PURPOSE: Narrow transcript-only adjustment page retained as a legacy variant.
+MAIN INPUTS:
+- transcript files under `input/`
+MAIN OUTPUTS:
+- adjusted transcript files written in place
+REQUIRED CONFIG / ASSETS:
+- `input/` directory
+EXTERNAL SERVICES:
+- none
+HARDWARE ASSUMPTIONS:
+- none
+REPLACED BY:
+- `pages/01_Adjust_AAA_EEE.py`
 """
 
 import streamlit as st

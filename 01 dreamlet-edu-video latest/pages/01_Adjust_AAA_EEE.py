@@ -4,6 +4,19 @@ CODING CONVENTION: NO SHARED CODE
 - Never import from other page files or create shared utilities
 - Copy any needed functions directly into this file
 - Each page is completely self-contained and independent
+
+STATUS: CURRENT
+PURPOSE: Split and normalize AAA / EEE source content into the expected lecture-level text structure.
+MAIN INPUTS:
+- raw AAA / EEE content files under `input/`
+MAIN OUTPUTS:
+- adjusted and split lecture text files written back into the working course folders
+REQUIRED CONFIG / ASSETS:
+- `input/` directory
+EXTERNAL SERVICES:
+- none
+HARDWARE ASSUMPTIONS:
+- none
 """
 
 import streamlit as st

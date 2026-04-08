@@ -4,6 +4,19 @@ CODING CONVENTION: NO SHARED CODE
 - Never import from other page files or create shared utilities
 - Copy any needed functions directly into this file
 - Each page is completely self-contained and independent
+
+STATUS: CURRENT
+PURPOSE: Generate lecture audio using the Inworld cloud TTS service as an alternative narration backend.
+MAIN INPUTS:
+- section text files under lecture folders in `input/`
+MAIN OUTPUTS:
+- generated audio files for the selected narration content
+REQUIRED CONFIG / ASSETS:
+- valid Inworld credentials configured for this page
+EXTERNAL SERVICES:
+- Inworld TTS API
+HARDWARE ASSUMPTIONS:
+- none
 """
 
 import streamlit as st

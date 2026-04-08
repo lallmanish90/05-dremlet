@@ -1,4 +1,0 @@
-LICENSE_KEY=DL_70af807baec6_test
-USER_ID=test_user
-LICENSE_SERVER_URL=http://localhost:5000/api/validate
-FALLBACK_EXPIRY=2025-12-31T23:59:59

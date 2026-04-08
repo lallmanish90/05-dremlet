@@ -4,6 +4,21 @@ CODING CONVENTION: NO SHARED CODE
 - Never import from other page files or create shared utilities
 - Copy any needed functions directly into this file
 - Each page is completely self-contained and independent
+
+STATUS: BACKUP
+PURPOSE: Backup copy of the main AAA / EEE adjustment page retained for rollback and reference.
+MAIN INPUTS:
+- raw AAA / EEE content files under `input/`
+MAIN OUTPUTS:
+- adjusted and split lecture text files written back into the working course folders
+REQUIRED CONFIG / ASSETS:
+- `input/` directory
+EXTERNAL SERVICES:
+- none
+HARDWARE ASSUMPTIONS:
+- none
+REPLACED BY:
+- `pages/01_Adjust_AAA_EEE.py`
 """
 
 import streamlit as st
