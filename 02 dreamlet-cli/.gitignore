@@ -1,8 +1,0 @@
-__pycache__/
-.pytest_cache/
-*.pyc
-.dreamlet-cli-state/
-input/*
-!input/.gitkeep
-output/*
-!output/.gitkeep
