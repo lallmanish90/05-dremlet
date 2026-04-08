@@ -1,0 +1,1392 @@
+[
+  {
+    "page_id": "01",
+    "module_name": "page_01_adjust_aaa_eee",
+    "source_file": "pages/01_Adjust_AAA_EEE.py",
+    "title": "AAA & EEE Content Splitter",
+    "status": "CURRENT",
+    "purpose": "Split and normalize AAA / EEE source content into the expected lecture-level text structure.",
+    "source_compiles": true,
+    "widgets": [
+      {
+        "kind": "checkbox",
+        "name": "create-artifact-c-folder-with-xx-c-files",
+        "label": "\u2705 Create 'artifact-c' folder with 'XX-c' files?",
+        "key": null,
+        "value_type": "bool",
+        "default": false,
+        "generated_flag": "create-artifact-c-folder-with-xx-c-files"
+      }
+    ]
+  },
+  {
+    "page_id": "02",
+    "module_name": "page_02_rename",
+    "source_file": "pages/02_Rename.py",
+    "title": "Rename",
+    "status": "CURRENT",
+    "purpose": "Standardize lecture file names into the naming scheme expected by the rest of the pipeline.",
+    "source_compiles": true,
+    "widgets": []
+  },
+  {
+    "page_id": "03",
+    "module_name": "page_03_save_text",
+    "source_file": "pages/03_Save_Text.py",
+    "title": "Save Text",
+    "status": "CURRENT",
+    "purpose": "Break transcript and summary material into section files for downstream TTS processing.",
+    "source_compiles": true,
+    "widgets": []
+  },
+  {
+    "page_id": "04",
+    "module_name": "page_04_remove_unwanted",
+    "source_file": "pages/04_Remove_unwanted.py",
+    "title": "Remove unwanted",
+    "status": "CURRENT",
+    "purpose": "Remove unwanted or low-value files from lecture folders before later processing steps.",
+    "source_compiles": true,
+    "widgets": [
+      {
+        "kind": "selectbox",
+        "name": "course-selector",
+        "label": "Select a course to view:",
+        "key": "course_selector",
+        "value_type": "str",
+        "default": null,
+        "generated_flag": "course-selector"
+      },
+      {
+        "kind": "radio",
+        "name": "course-selector",
+        "label": "Select a course:",
+        "key": "course_selector",
+        "value_type": "str",
+        "default": null,
+        "generated_flag": "course-selector"
+      }
+    ]
+  },
+  {
+    "page_id": "05",
+    "module_name": "page_05_move_slides",
+    "source_file": "pages/05_Move_Slides.py",
+    "title": "Move Slides",
+    "status": "CURRENT",
+    "purpose": "Move slide files into the folder structure expected by the image-generation and verification steps.",
+    "source_compiles": true,
+    "widgets": []
+  },
+  {
+    "page_id": "06",
+    "module_name": "page_06",
+    "source_file": "pages/06.py",
+    "title": "4K Image (PPTX & ZIP) - Final",
+    "status": "CURRENT",
+    "purpose": "Generate branded 4K images from PPTX presentations or ZIP image archives.",
+    "source_compiles": true,
+    "widgets": [
+      {
+        "kind": "checkbox",
+        "name": "create-without-logo-png-folder",
+        "label": "Create 'without_logo_png' folder",
+        "key": null,
+        "value_type": "bool",
+        "default": false,
+        "generated_flag": "create-without-logo-png-folder"
+      },
+      {
+        "kind": "selectbox",
+        "name": "select-conversion-method",
+        "label": "Select conversion method:",
+        "key": null,
+        "value_type": "str",
+        "default": 0,
+        "generated_flag": "select-conversion-method"
+      },
+      {
+        "kind": "checkbox",
+        "name": "enable-automatic-fallback",
+        "label": "Enable automatic fallback",
+        "key": null,
+        "value_type": "bool",
+        "default": true,
+        "generated_flag": "enable-automatic-fallback"
+      },
+      {
+        "kind": "slider",
+        "name": "batch-size-images-processed-simultaneously",
+        "label": "Batch Size (images processed simultaneously)",
+        "key": null,
+        "value_type": "str",
+        "default": null,
+        "generated_flag": "batch-size-images-processed-simultaneously"
+      }
+    ]
+  },
+  {
+    "page_id": "06-4k-image",
+    "module_name": "page_06_4k_image",
+    "source_file": "pages/06_4K_Image.py",
+    "title": "4K Image",
+    "status": "LEGACY",
+    "purpose": "Older 4K image generation page for PPTX-based lecture assets.",
+    "source_compiles": true,
+    "widgets": [
+      {
+        "kind": "checkbox",
+        "name": "create-without-logo-png-folder",
+        "label": "Create 'without_logo_png' folder",
+        "key": null,
+        "value_type": "bool",
+        "default": false,
+        "generated_flag": "create-without-logo-png-folder"
+      },
+      {
+        "kind": "selectbox",
+        "name": "select-conversion-method",
+        "label": "Select conversion method:",
+        "key": null,
+        "value_type": "str",
+        "default": 0,
+        "generated_flag": "select-conversion-method"
+      },
+      {
+        "kind": "checkbox",
+        "name": "enable-automatic-fallback",
+        "label": "Enable automatic fallback",
+        "key": null,
+        "value_type": "bool",
+        "default": true,
+        "generated_flag": "enable-automatic-fallback"
+      }
+    ]
+  },
+  {
+    "page_id": "06-4k-image-pptx-zip",
+    "module_name": "page_06_4k_image_pptx_zip",
+    "source_file": "pages/06_4K_Image_pptx_zip.py",
+    "title": "4K Image (PPTX & ZIP)",
+    "status": "LEGACY",
+    "purpose": "Older combined PPTX and ZIP 4K image generation page.",
+    "source_compiles": true,
+    "widgets": [
+      {
+        "kind": "checkbox",
+        "name": "create-without-logo-png-folder",
+        "label": "Create 'without_logo_png' folder",
+        "key": null,
+        "value_type": "bool",
+        "default": false,
+        "generated_flag": "create-without-logo-png-folder"
+      },
+      {
+        "kind": "selectbox",
+        "name": "select-conversion-method",
+        "label": "Select conversion method:",
+        "key": null,
+        "value_type": "str",
+        "default": 0,
+        "generated_flag": "select-conversion-method"
+      },
+      {
+        "kind": "checkbox",
+        "name": "enable-automatic-fallback",
+        "label": "Enable automatic fallback",
+        "key": null,
+        "value_type": "bool",
+        "default": true,
+        "generated_flag": "enable-automatic-fallback"
+      }
+    ]
+  },
+  {
+    "page_id": "07",
+    "module_name": "page_07_tts_kokoro",
+    "source_file": "pages/07_TTS_Kokoro.py",
+    "title": "TTS Kokoro",
+    "status": "CURRENT",
+    "purpose": "Generate lecture audio from section text using the local Kokoro TTS service.",
+    "source_compiles": true,
+    "widgets": [
+      {
+        "kind": "selectbox",
+        "name": "audio-format",
+        "label": "Audio Format",
+        "key": "audio_format",
+        "value_type": "str",
+        "default": 0,
+        "generated_flag": "audio-format"
+      },
+      {
+        "kind": "checkbox",
+        "name": "generate-timestamps",
+        "label": "Generate Word Timestamps",
+        "key": "generate_timestamps",
+        "value_type": "bool",
+        "default": false,
+        "generated_flag": "generate-timestamps"
+      },
+      {
+        "kind": "checkbox",
+        "name": "value",
+        "label": null,
+        "key": null,
+        "value_type": "bool",
+        "default": null,
+        "generated_flag": null
+      },
+      {
+        "kind": "checkbox",
+        "name": "save-timestamps",
+        "label": "Save Timestamps to JSON",
+        "key": "save_timestamps",
+        "value_type": "bool",
+        "default": true,
+        "generated_flag": "save-timestamps"
+      },
+      {
+        "kind": "checkbox",
+        "name": "normalize-text",
+        "label": "Normalize Text",
+        "key": null,
+        "value_type": "bool",
+        "default": null,
+        "generated_flag": "normalize-text"
+      },
+      {
+        "kind": "selectbox",
+        "name": "value",
+        "label": null,
+        "key": null,
+        "value_type": "str",
+        "default": null,
+        "generated_flag": null
+      },
+      {
+        "kind": "slider",
+        "name": "value",
+        "label": null,
+        "key": null,
+        "value_type": "str",
+        "default": null,
+        "generated_flag": null
+      }
+    ]
+  },
+  {
+    "page_id": "08-ollama",
+    "module_name": "page_08_ollama",
+    "source_file": "pages/08_Ollama.py",
+    "title": "Translator - Ollama",
+    "status": "CURRENT",
+    "purpose": "Translate lecture content using a local Ollama model backend.",
+    "source_compiles": true,
+    "widgets": [
+      {
+        "kind": "text_input",
+        "name": "lang-search-input",
+        "label": "Search languages",
+        "key": "lang_search_input",
+        "value_type": "str",
+        "default": null,
+        "generated_flag": "lang-search-input"
+      },
+      {
+        "kind": "checkbox",
+        "name": "enable-debug-mode-shows-detailed-api-responses",
+        "label": "Enable debug mode (shows detailed API responses)",
+        "key": null,
+        "value_type": "bool",
+        "default": null,
+        "generated_flag": "enable-debug-mode-shows-detailed-api-responses"
+      },
+      {
+        "kind": "checkbox",
+        "name": "skip-already-translated-files",
+        "label": "Skip already translated files",
+        "key": null,
+        "value_type": "bool",
+        "default": null,
+        "generated_flag": "skip-already-translated-files"
+      },
+      {
+        "kind": "text_input",
+        "name": "ollama-model-name",
+        "label": "Ollama Model Name",
+        "key": null,
+        "value_type": "str",
+        "default": null,
+        "generated_flag": "ollama-model-name"
+      },
+      {
+        "kind": "slider",
+        "name": "temperature",
+        "label": "Temperature",
+        "key": null,
+        "value_type": "str",
+        "default": null,
+        "generated_flag": "temperature"
+      },
+      {
+        "kind": "checkbox",
+        "name": "value",
+        "label": null,
+        "key": null,
+        "value_type": "bool",
+        "default": null,
+        "generated_flag": null
+      }
+    ]
+  },
+  {
+    "page_id": "08-translator-lm-studio",
+    "module_name": "page_08_translator_lm_studio",
+    "source_file": "pages/08_Translator_LM_Studio.py",
+    "title": "Translator - LM Studio",
+    "status": "CURRENT",
+    "purpose": "Translate lecture content using an LM Studio-compatible local OpenAI API endpoint.",
+    "source_compiles": true,
+    "widgets": [
+      {
+        "kind": "text_input",
+        "name": "lang-search-input",
+        "label": "Search languages",
+        "key": "lang_search_input",
+        "value_type": "str",
+        "default": null,
+        "generated_flag": "lang-search-input"
+      },
+      {
+        "kind": "checkbox",
+        "name": "value",
+        "label": null,
+        "key": null,
+        "value_type": "bool",
+        "default": null,
+        "generated_flag": null
+      },
+      {
+        "kind": "checkbox",
+        "name": "enable-debug-mode-shows-detailed-api-responses",
+        "label": "Enable debug mode (shows detailed API responses)",
+        "key": null,
+        "value_type": "bool",
+        "default": null,
+        "generated_flag": "enable-debug-mode-shows-detailed-api-responses"
+      },
+      {
+        "kind": "checkbox",
+        "name": "skip-existing-translations",
+        "label": "Skip existing translations",
+        "key": null,
+        "value_type": "bool",
+        "default": null,
+        "generated_flag": "skip-existing-translations"
+      },
+      {
+        "kind": "text_input",
+        "name": "lm-studio-model-name",
+        "label": "LM Studio Model Name",
+        "key": null,
+        "value_type": "str",
+        "default": null,
+        "generated_flag": "lm-studio-model-name"
+      },
+      {
+        "kind": "slider",
+        "name": "temperature",
+        "label": "Temperature",
+        "key": null,
+        "value_type": "str",
+        "default": null,
+        "generated_flag": "temperature"
+      }
+    ]
+  },
+  {
+    "page_id": "09-count",
+    "module_name": "page_09_count",
+    "source_file": "pages/09_Count.py",
+    "title": "Count - artifacts/pptx",
+    "status": "LEGACY",
+    "purpose": "Older lecture artifact verification and count page.",
+    "source_compiles": true,
+    "widgets": []
+  },
+  {
+    "page_id": "09-count-new",
+    "module_name": "page_09_count_new",
+    "source_file": "pages/09_Count_new.py",
+    "title": "\ud83d\udd22 File Verification System (New)",
+    "status": "CURRENT",
+    "purpose": "Verify that lecture artifacts, text sections, and presentation outputs are aligned before video generation.",
+    "source_compiles": true,
+    "widgets": [
+      {
+        "kind": "checkbox",
+        "name": "show-file-discovery-debug-info",
+        "label": "Show file discovery debug info",
+        "key": null,
+        "value_type": "bool",
+        "default": null,
+        "generated_flag": "show-file-discovery-debug-info"
+      },
+      {
+        "kind": "checkbox",
+        "name": "show-zip-processing-details",
+        "label": "Show ZIP processing details",
+        "key": null,
+        "value_type": "bool",
+        "default": null,
+        "generated_flag": "show-zip-processing-details"
+      },
+      {
+        "kind": "selectbox",
+        "name": "filter-by-course",
+        "label": "Filter by Course",
+        "key": null,
+        "value_type": "str",
+        "default": null,
+        "generated_flag": "filter-by-course"
+      },
+      {
+        "kind": "checkbox",
+        "name": "show-only-entries-with-errors",
+        "label": "Show only entries with errors",
+        "key": null,
+        "value_type": "bool",
+        "default": null,
+        "generated_flag": "show-only-entries-with-errors"
+      }
+    ]
+  },
+  {
+    "page_id": "09-fix-for-mp4",
+    "module_name": "page_09_fix_for_mp4",
+    "source_file": "pages/09_Fix_for_mp4.py",
+    "title": "\ud83d\udd27 Fix MP4 Mismatches",
+    "status": "CURRENT",
+    "purpose": "Repair lecture folders so they satisfy the prerequisites required by MP4 generation.",
+    "source_compiles": true,
+    "widgets": [
+      {
+        "kind": "checkbox",
+        "name": "value",
+        "label": null,
+        "key": null,
+        "value_type": "bool",
+        "default": null,
+        "generated_flag": null
+      }
+    ]
+  },
+  {
+    "page_id": "10",
+    "module_name": "page_10",
+    "source_file": "pages/10.py",
+    "title": "MP4 GPU - Final",
+    "status": "CURRENT",
+    "purpose": "Generate final MP4 lecture videos from image/audio pairs with machine-aware acceleration.",
+    "source_compiles": true,
+    "widgets": [
+      {
+        "kind": "selectbox",
+        "name": "select-language-for-mp4-generation",
+        "label": "Select Language for MP4 Generation",
+        "key": null,
+        "value_type": "str",
+        "default": null,
+        "generated_flag": "select-language-for-mp4-generation"
+      },
+      {
+        "kind": "checkbox",
+        "name": "force-create-mp4s",
+        "label": "Force Create MP4s",
+        "key": null,
+        "value_type": "bool",
+        "default": false,
+        "generated_flag": "force-create-mp4s"
+      },
+      {
+        "kind": "checkbox",
+        "name": "generate-regular-videos",
+        "label": "Generate Regular Videos",
+        "key": null,
+        "value_type": "bool",
+        "default": true,
+        "generated_flag": "generate-regular-videos"
+      },
+      {
+        "kind": "checkbox",
+        "name": "generate-summary-videos",
+        "label": "Generate Summary Videos",
+        "key": null,
+        "value_type": "bool",
+        "default": true,
+        "generated_flag": "generate-summary-videos"
+      },
+      {
+        "kind": "checkbox",
+        "name": "value",
+        "label": null,
+        "key": null,
+        "value_type": "bool",
+        "default": null,
+        "generated_flag": null
+      }
+    ]
+  },
+  {
+    "page_id": "10-mp4-gpu",
+    "module_name": "page_10_mp4_gpu",
+    "source_file": "pages/10_mp4_GPU.py",
+    "title": "mp4 - GPU",
+    "status": "LEGACY",
+    "purpose": "Older GPU-focused MP4 generation page for lecture videos.",
+    "source_compiles": true,
+    "widgets": [
+      {
+        "kind": "selectbox",
+        "name": "select-language-for-mp4-generation",
+        "label": "Select Language for MP4 Generation",
+        "key": null,
+        "value_type": "str",
+        "default": null,
+        "generated_flag": "select-language-for-mp4-generation"
+      },
+      {
+        "kind": "checkbox",
+        "name": "force-create-mp4s",
+        "label": "Force Create MP4s",
+        "key": null,
+        "value_type": "bool",
+        "default": false,
+        "generated_flag": "force-create-mp4s"
+      },
+      {
+        "kind": "checkbox",
+        "name": "generate-regular-videos",
+        "label": "Generate Regular Videos",
+        "key": null,
+        "value_type": "bool",
+        "default": true,
+        "generated_flag": "generate-regular-videos"
+      },
+      {
+        "kind": "checkbox",
+        "name": "generate-summary-videos",
+        "label": "Generate Summary Videos",
+        "key": null,
+        "value_type": "bool",
+        "default": true,
+        "generated_flag": "generate-summary-videos"
+      },
+      {
+        "kind": "checkbox",
+        "name": "value",
+        "label": null,
+        "key": null,
+        "value_type": "bool",
+        "default": null,
+        "generated_flag": null
+      }
+    ]
+  },
+  {
+    "page_id": "11-verify-mp4",
+    "module_name": "page_11_verify_mp4",
+    "source_file": "pages/11_Verify_mp4.py",
+    "title": "verify - mp4",
+    "status": "CURRENT",
+    "purpose": "Verify generated MP4 files and surface mismatches, missing outputs, or duration problems.",
+    "source_compiles": true,
+    "widgets": []
+  },
+  {
+    "page_id": "11-workflow-manager",
+    "module_name": "page_11_workflow_manager",
+    "source_file": "pages/11_Workflow_Manager.py",
+    "title": "\u2699\ufe0f Advanced Workflow Manager",
+    "status": "CURRENT",
+    "purpose": "Create, save, and run workflow templates for batch execution of the current page pipeline.",
+    "source_compiles": true,
+    "widgets": [
+      {
+        "kind": "selectbox",
+        "name": "select-project",
+        "label": "Select Project",
+        "key": null,
+        "value_type": "str",
+        "default": null,
+        "generated_flag": "select-project"
+      },
+      {
+        "kind": "text_input",
+        "name": "template-name",
+        "label": "Template Name",
+        "key": null,
+        "value_type": "str",
+        "default": null,
+        "generated_flag": "template-name"
+      },
+      {
+        "kind": "radio",
+        "name": "select-section",
+        "label": "Select Section",
+        "key": null,
+        "value_type": "str",
+        "default": 0,
+        "generated_flag": "select-section"
+      },
+      {
+        "kind": "selectbox",
+        "name": "load-existing-template",
+        "label": "Load Existing Template",
+        "key": null,
+        "value_type": "str",
+        "default": null,
+        "generated_flag": "load-existing-template"
+      },
+      {
+        "kind": "text_input",
+        "name": "value",
+        "label": null,
+        "key": null,
+        "value_type": "str",
+        "default": null,
+        "generated_flag": null
+      },
+      {
+        "kind": "text_area",
+        "name": "value",
+        "label": null,
+        "key": null,
+        "value_type": "str",
+        "default": null,
+        "generated_flag": null
+      },
+      {
+        "kind": "checkbox",
+        "name": "enabled",
+        "label": "Enabled",
+        "key": null,
+        "value_type": "bool",
+        "default": null,
+        "generated_flag": "enabled"
+      },
+      {
+        "kind": "checkbox",
+        "name": "required",
+        "label": "Required",
+        "key": null,
+        "value_type": "bool",
+        "default": null,
+        "generated_flag": "required"
+      },
+      {
+        "kind": "number_input",
+        "name": "est-time-sec",
+        "label": "Est. Time (sec)",
+        "key": null,
+        "value_type": "str",
+        "default": null,
+        "generated_flag": "est-time-sec"
+      },
+      {
+        "kind": "checkbox",
+        "name": "create-artifact-c-folder",
+        "label": "Create artifact-c folder",
+        "key": null,
+        "value_type": "bool",
+        "default": true,
+        "generated_flag": "create-artifact-c-folder"
+      }
+    ]
+  },
+  {
+    "page_id": "12",
+    "module_name": "page_12_delete",
+    "source_file": "pages/12_Delete.py",
+    "title": "Delete Lecture Files",
+    "status": "CURRENT",
+    "purpose": "Delete selected lecture files as a maintenance and recovery utility.",
+    "source_compiles": true,
+    "widgets": [
+      {
+        "kind": "checkbox",
+        "name": "select-all-global",
+        "label": "Select ALL Lectures (use with caution)",
+        "key": "select_all_global",
+        "value_type": "bool",
+        "default": null,
+        "generated_flag": "select-all-global"
+      },
+      {
+        "kind": "checkbox",
+        "name": "confirm",
+        "label": "I understand that this action will permanently delete all selected files and cannot be undone",
+        "key": "confirm",
+        "value_type": "bool",
+        "default": null,
+        "generated_flag": "confirm"
+      },
+      {
+        "kind": "checkbox",
+        "name": "double-confirm",
+        "label": "I have backed up any important data and am ready to proceed with deletion",
+        "key": "double_confirm",
+        "value_type": "bool",
+        "default": null,
+        "generated_flag": "double-confirm"
+      },
+      {
+        "kind": "checkbox",
+        "name": "value",
+        "label": null,
+        "key": null,
+        "value_type": "bool",
+        "default": null,
+        "generated_flag": null
+      }
+    ]
+  },
+  {
+    "page_id": "13",
+    "module_name": "page_13_delete_folder",
+    "source_file": "pages/13_Delete_folder.py",
+    "title": "Delete Specific Folders",
+    "status": "CURRENT",
+    "purpose": "Delete selected folder types across lecture trees as a maintenance and recovery utility.",
+    "source_compiles": true,
+    "widgets": [
+      {
+        "kind": "multiselect",
+        "name": "folder-type-selector",
+        "label": "Select folder types to delete across lectures:",
+        "key": "folder_type_selector",
+        "value_type": "list",
+        "default": null,
+        "generated_flag": "folder-type-selector"
+      },
+      {
+        "kind": "selectbox",
+        "name": "course-selector-specific",
+        "label": "Select a course:",
+        "key": "course_selector_specific",
+        "value_type": "str",
+        "default": null,
+        "generated_flag": "course-selector-specific"
+      },
+      {
+        "kind": "multiselect",
+        "name": "course-selector-multiselect",
+        "label": "Select courses to view:",
+        "key": "course_selector_multiselect",
+        "value_type": "list",
+        "default": null,
+        "generated_flag": "course-selector-multiselect"
+      },
+      {
+        "kind": "checkbox",
+        "name": "confirm-specific",
+        "label": "I understand that this action will permanently delete all selected folders and cannot be undone",
+        "key": "confirm_specific",
+        "value_type": "bool",
+        "default": null,
+        "generated_flag": "confirm-specific"
+      },
+      {
+        "kind": "radio",
+        "name": "scope-selector",
+        "label": "Where to delete these folder types:",
+        "key": "scope_selector",
+        "value_type": "str",
+        "default": null,
+        "generated_flag": "scope-selector"
+      },
+      {
+        "kind": "multiselect",
+        "name": "course-selector-bulk",
+        "label": "Select courses:",
+        "key": "course_selector_bulk",
+        "value_type": "list",
+        "default": null,
+        "generated_flag": "course-selector-bulk"
+      },
+      {
+        "kind": "checkbox",
+        "name": "confirm-bulk",
+        "label": "I understand that this action will permanently delete all matching folders and cannot be undone",
+        "key": "confirm_bulk",
+        "value_type": "bool",
+        "default": null,
+        "generated_flag": "confirm-bulk"
+      },
+      {
+        "kind": "checkbox",
+        "name": "double-confirm-bulk",
+        "label": "I have backed up any important data and am ready to proceed with deletion",
+        "key": "double_confirm_bulk",
+        "value_type": "bool",
+        "default": null,
+        "generated_flag": "double-confirm-bulk"
+      },
+      {
+        "kind": "checkbox",
+        "name": "value",
+        "label": null,
+        "key": null,
+        "value_type": "bool",
+        "default": null,
+        "generated_flag": null
+      }
+    ]
+  },
+  {
+    "page_id": "14",
+    "module_name": "page_14_restore_pptx",
+    "source_file": "pages/14_restore_pptx.py",
+    "title": "14 Restore Files",
+    "status": "CURRENT",
+    "purpose": "Restore PPTX files back into lecture folders after earlier reorganization or cleanup steps.",
+    "source_compiles": true,
+    "widgets": [
+      {
+        "kind": "checkbox",
+        "name": "value",
+        "label": null,
+        "key": null,
+        "value_type": "bool",
+        "default": null,
+        "generated_flag": null
+      }
+    ]
+  },
+  {
+    "page_id": "15",
+    "module_name": "page_15_inworld_tts",
+    "source_file": "pages/15_inworld_TTS.py",
+    "title": "TTS Inworld",
+    "status": "CURRENT",
+    "purpose": "Generate lecture audio using the Inworld cloud TTS service as an alternative narration backend.",
+    "source_compiles": true,
+    "widgets": [
+      {
+        "kind": "selectbox",
+        "name": "select-language",
+        "label": "Select Language",
+        "key": null,
+        "value_type": "str",
+        "default": 0,
+        "generated_flag": "select-language"
+      },
+      {
+        "kind": "selectbox",
+        "name": "voice",
+        "label": "Voice",
+        "key": null,
+        "value_type": "str",
+        "default": 0,
+        "generated_flag": "voice"
+      },
+      {
+        "kind": "selectbox",
+        "name": "audio-format",
+        "label": "Audio Format",
+        "key": null,
+        "value_type": "str",
+        "default": 0,
+        "generated_flag": "audio-format"
+      },
+      {
+        "kind": "slider",
+        "name": "talking-speed",
+        "label": "Talking Speed",
+        "key": null,
+        "value_type": "float",
+        "default": 0.85,
+        "generated_flag": "talking-speed"
+      },
+      {
+        "kind": "slider",
+        "name": "temperature",
+        "label": "Temperature",
+        "key": null,
+        "value_type": "float",
+        "default": 0.75,
+        "generated_flag": "temperature"
+      },
+      {
+        "kind": "checkbox",
+        "name": "normalize-text",
+        "label": "Normalize Text",
+        "key": null,
+        "value_type": "bool",
+        "default": true,
+        "generated_flag": "normalize-text"
+      },
+      {
+        "kind": "checkbox",
+        "name": "value",
+        "label": null,
+        "key": null,
+        "value_type": "bool",
+        "default": null,
+        "generated_flag": null
+      }
+    ]
+  },
+  {
+    "page_id": "50",
+    "module_name": "page_50_legacy_files_header",
+    "source_file": "pages/50_Legacy_Files_Header.py",
+    "title": "Legacy Files",
+    "status": "LEGACY",
+    "purpose": "Sidebar grouping page that introduces older, superseded pages retained for reference.",
+    "source_compiles": true,
+    "widgets": []
+  },
+  {
+    "page_id": "51",
+    "module_name": "page_51_adjust_slide_files_only",
+    "source_file": "pages/51_Adjust_Slide_Files_Only.py",
+    "title": "02 Adjust Slide Files Only",
+    "status": "EXPERIMENTAL",
+    "purpose": "Narrow slide-file-only adjustment variant retained for experimentation and reference.",
+    "source_compiles": true,
+    "widgets": []
+  },
+  {
+    "page_id": "52",
+    "module_name": "page_52_multilingual_folder_structure",
+    "source_file": "pages/52_multilingual_folder_structure.py",
+    "title": "12 Prepare Folders for Multilingual",
+    "status": "LEGACY",
+    "purpose": "52 multilingual folder structure",
+    "source_compiles": false,
+    "widgets": []
+  },
+  {
+    "page_id": "53",
+    "module_name": "page_53_convert_text_to_multiple_languages",
+    "source_file": "pages/53_Convert_Text_to_multiple_languages.py",
+    "title": "13 Convert Text to multiple languages",
+    "status": "UNSPECIFIED",
+    "purpose": "53 Convert Text to multiple languages",
+    "source_compiles": false,
+    "widgets": []
+  },
+  {
+    "page_id": "54",
+    "module_name": "page_54_multilingual_tts",
+    "source_file": "pages/54_Multilingual_TTS.py",
+    "title": "14 Multilingual TTS",
+    "status": "UNSPECIFIED",
+    "purpose": "54 Multilingual TTS",
+    "source_compiles": false,
+    "widgets": []
+  },
+  {
+    "page_id": "55",
+    "module_name": "page_55_tts_open_ai",
+    "source_file": "pages/55_TTS_Open_AI.py",
+    "title": "TTS - Open AI",
+    "status": "UNSPECIFIED",
+    "purpose": "55 TTS Open AI",
+    "source_compiles": false,
+    "widgets": []
+  },
+  {
+    "page_id": "56",
+    "module_name": "page_56_tts_kokoro_old",
+    "source_file": "pages/56_TTS_Kokoro_old.py",
+    "title": "TTS Kokoro - old",
+    "status": "LEGACY",
+    "purpose": "Older Kokoro TTS page retained for reference and backward compatibility.",
+    "source_compiles": true,
+    "widgets": [
+      {
+        "kind": "radio",
+        "name": "voice-selection-mode",
+        "label": "Voice Selection Mode",
+        "key": null,
+        "value_type": "str",
+        "default": 0,
+        "generated_flag": "voice-selection-mode"
+      },
+      {
+        "kind": "selectbox",
+        "name": "select-voice",
+        "label": "Select Voice",
+        "key": null,
+        "value_type": "str",
+        "default": null,
+        "generated_flag": "select-voice"
+      },
+      {
+        "kind": "selectbox",
+        "name": "audio-format",
+        "label": "Audio Format",
+        "key": null,
+        "value_type": "str",
+        "default": 0,
+        "generated_flag": "audio-format"
+      },
+      {
+        "kind": "slider",
+        "name": "speech-speed",
+        "label": "Speech Speed",
+        "key": null,
+        "value_type": "float",
+        "default": 1.0,
+        "generated_flag": "speech-speed"
+      },
+      {
+        "kind": "checkbox",
+        "name": "enable-text-normalization",
+        "label": "Enable Text Normalization",
+        "key": null,
+        "value_type": "bool",
+        "default": true,
+        "generated_flag": "enable-text-normalization"
+      },
+      {
+        "kind": "checkbox",
+        "name": "generate-word-timestamps",
+        "label": "Generate Word Timestamps",
+        "key": null,
+        "value_type": "bool",
+        "default": false,
+        "generated_flag": "generate-word-timestamps"
+      },
+      {
+        "kind": "checkbox",
+        "name": "save-timestamps-to-json",
+        "label": "Save Timestamps to JSON",
+        "key": null,
+        "value_type": "bool",
+        "default": false,
+        "generated_flag": "save-timestamps-to-json"
+      },
+      {
+        "kind": "checkbox",
+        "name": "value",
+        "label": null,
+        "key": null,
+        "value_type": "bool",
+        "default": null,
+        "generated_flag": null
+      },
+      {
+        "kind": "selectbox",
+        "name": "value",
+        "label": null,
+        "key": null,
+        "value_type": "str",
+        "default": null,
+        "generated_flag": null
+      },
+      {
+        "kind": "number_input",
+        "name": "value",
+        "label": null,
+        "key": null,
+        "value_type": "str",
+        "default": null,
+        "generated_flag": null
+      }
+    ]
+  },
+  {
+    "page_id": "57",
+    "module_name": "page_57_tts_kokoro_gpu_old",
+    "source_file": "pages/57_TTS_Kokoro_GPU_old.py",
+    "title": "TTS Kokoro - GPU old",
+    "status": "LEGACY",
+    "purpose": "Older advanced Kokoro GPU-oriented TTS page retained for reference.",
+    "source_compiles": true,
+    "widgets": [
+      {
+        "kind": "radio",
+        "name": "voice-selection-mode",
+        "label": "Voice Selection Mode",
+        "key": null,
+        "value_type": "str",
+        "default": 0,
+        "generated_flag": "voice-selection-mode"
+      },
+      {
+        "kind": "selectbox",
+        "name": "select-voice",
+        "label": "Select Voice",
+        "key": null,
+        "value_type": "str",
+        "default": null,
+        "generated_flag": "select-voice"
+      },
+      {
+        "kind": "selectbox",
+        "name": "audio-format",
+        "label": "Audio Format",
+        "key": null,
+        "value_type": "str",
+        "default": 0,
+        "generated_flag": "audio-format"
+      },
+      {
+        "kind": "slider",
+        "name": "speech-speed",
+        "label": "Speech Speed",
+        "key": null,
+        "value_type": "float",
+        "default": 1.0,
+        "generated_flag": "speech-speed"
+      },
+      {
+        "kind": "checkbox",
+        "name": "enable-parallel-processing",
+        "label": "Enable Parallel Processing",
+        "key": null,
+        "value_type": "bool",
+        "default": true,
+        "generated_flag": "enable-parallel-processing"
+      },
+      {
+        "kind": "checkbox",
+        "name": "enable-text-normalization",
+        "label": "Enable Text Normalization",
+        "key": null,
+        "value_type": "bool",
+        "default": true,
+        "generated_flag": "enable-text-normalization"
+      },
+      {
+        "kind": "checkbox",
+        "name": "generate-word-timestamps",
+        "label": "Generate Word Timestamps",
+        "key": null,
+        "value_type": "bool",
+        "default": false,
+        "generated_flag": "generate-word-timestamps"
+      },
+      {
+        "kind": "checkbox",
+        "name": "save-timestamps-to-json",
+        "label": "Save Timestamps to JSON",
+        "key": null,
+        "value_type": "bool",
+        "default": false,
+        "generated_flag": "save-timestamps-to-json"
+      },
+      {
+        "kind": "slider",
+        "name": "worker-threads",
+        "label": "Worker Threads",
+        "key": null,
+        "value_type": "str",
+        "default": null,
+        "generated_flag": "worker-threads"
+      },
+      {
+        "kind": "slider",
+        "name": "batch-size",
+        "label": "Batch Size",
+        "key": null,
+        "value_type": "int",
+        "default": 4,
+        "generated_flag": "batch-size"
+      },
+      {
+        "kind": "radio",
+        "name": "optimization-level",
+        "label": "Optimization Level",
+        "key": null,
+        "value_type": "str",
+        "default": 1,
+        "generated_flag": "optimization-level"
+      },
+      {
+        "kind": "checkbox",
+        "name": "value",
+        "label": null,
+        "key": null,
+        "value_type": "bool",
+        "default": null,
+        "generated_flag": null
+      },
+      {
+        "kind": "selectbox",
+        "name": "value",
+        "label": null,
+        "key": null,
+        "value_type": "str",
+        "default": null,
+        "generated_flag": null
+      },
+      {
+        "kind": "number_input",
+        "name": "value",
+        "label": null,
+        "key": null,
+        "value_type": "str",
+        "default": null,
+        "generated_flag": null
+      }
+    ]
+  },
+  {
+    "page_id": "58",
+    "module_name": "page_58_translator_lecto",
+    "source_file": "pages/58_Translator_Lecto.py",
+    "title": "Translator - Lecto",
+    "status": "LEGACY",
+    "purpose": "Older Lecto-based translation page retained as an alternate legacy backend.",
+    "source_compiles": true,
+    "widgets": [
+      {
+        "kind": "multiselect",
+        "name": "select-target-languages-for-translation",
+        "label": "Select target languages for translation",
+        "key": null,
+        "value_type": "list",
+        "default": null,
+        "generated_flag": "select-target-languages-for-translation"
+      },
+      {
+        "kind": "checkbox",
+        "name": "value",
+        "label": null,
+        "key": null,
+        "value_type": "bool",
+        "default": null,
+        "generated_flag": null
+      },
+      {
+        "kind": "checkbox",
+        "name": "enable-debug-mode-shows-detailed-api-responses",
+        "label": "Enable debug mode (shows detailed API responses)",
+        "key": null,
+        "value_type": "bool",
+        "default": null,
+        "generated_flag": "enable-debug-mode-shows-detailed-api-responses"
+      },
+      {
+        "kind": "checkbox",
+        "name": "skip-existing-translations",
+        "label": "Skip existing translations",
+        "key": null,
+        "value_type": "bool",
+        "default": null,
+        "generated_flag": "skip-existing-translations"
+      }
+    ]
+  },
+  {
+    "page_id": "59",
+    "module_name": "page_59_count_old",
+    "source_file": "pages/59_count_old.py",
+    "title": "Count - old",
+    "status": "LEGACY",
+    "purpose": "Older lecture count and discrepancy page retained for reference.",
+    "source_compiles": true,
+    "widgets": []
+  },
+  {
+    "page_id": "60",
+    "module_name": "page_60_mp4_cpu",
+    "source_file": "pages/60_mp4_CPU.py",
+    "title": "mp4 - CPU",
+    "status": "LEGACY",
+    "purpose": "Older CPU-only MP4 generation page retained as a fallback reference path.",
+    "source_compiles": true,
+    "widgets": [
+      {
+        "kind": "selectbox",
+        "name": "select-language-for-mp4-generation",
+        "label": "Select Language for MP4 Generation",
+        "key": null,
+        "value_type": "str",
+        "default": null,
+        "generated_flag": "select-language-for-mp4-generation"
+      },
+      {
+        "kind": "checkbox",
+        "name": "force-create-mp4s",
+        "label": "Force Create MP4s",
+        "key": null,
+        "value_type": "bool",
+        "default": false,
+        "generated_flag": "force-create-mp4s"
+      },
+      {
+        "kind": "checkbox",
+        "name": "generate-regular-videos",
+        "label": "Generate Regular Videos",
+        "key": null,
+        "value_type": "bool",
+        "default": true,
+        "generated_flag": "generate-regular-videos"
+      },
+      {
+        "kind": "checkbox",
+        "name": "generate-summary-videos",
+        "label": "Generate Summary Videos",
+        "key": null,
+        "value_type": "bool",
+        "default": true,
+        "generated_flag": "generate-summary-videos"
+      },
+      {
+        "kind": "checkbox",
+        "name": "value",
+        "label": null,
+        "key": null,
+        "value_type": "bool",
+        "default": null,
+        "generated_flag": null
+      }
+    ]
+  },
+  {
+    "page_id": "61",
+    "module_name": "page_61_adjust_transcript_only",
+    "source_file": "pages/61_Adjust_Transcript_Only.py",
+    "title": "Adjust Transcript - Only",
+    "status": "LEGACY",
+    "purpose": "Narrow transcript-only adjustment page retained as a legacy variant.",
+    "source_compiles": true,
+    "widgets": []
+  },
+  {
+    "page_id": "99-01-rename-backup",
+    "module_name": "page_99_01_rename_backup",
+    "source_file": "pages/99_01_Rename_BACKUP.py",
+    "title": "Rename",
+    "status": "BACKUP",
+    "purpose": "Backup copy of the rename page retained for rollback and reference.",
+    "source_compiles": true,
+    "widgets": []
+  },
+  {
+    "page_id": "99-02-adjust-aaa-eee-backup",
+    "module_name": "page_99_02_adjust_aaa_eee_backup",
+    "source_file": "pages/99_02_Adjust_AAA_EEE_BACKUP.py",
+    "title": "AAA & EEE Content Splitter",
+    "status": "BACKUP",
+    "purpose": "Backup copy of the main AAA / EEE adjustment page retained for rollback and reference.",
+    "source_compiles": true,
+    "widgets": []
+  },
+  {
+    "page_id": "99-03-save-text-backup",
+    "module_name": "page_99_03_save_text_backup",
+    "source_file": "pages/99_03_Save_Text_BACKUP.py",
+    "title": "Save Text",
+    "status": "BACKUP",
+    "purpose": "Backup copy of the save-text page retained for rollback and reference.",
+    "source_compiles": true,
+    "widgets": []
+  }
+]

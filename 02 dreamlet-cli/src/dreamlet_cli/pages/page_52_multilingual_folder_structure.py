@@ -6,7 +6,7 @@ CODING CONVENTION: NO SHARED CODE
 - Each page is completely self-contained and independent
 """
 
-import streamlit as st
+from dreamlet_cli.compat import st
 import os
 import re
 import time
@@ -17,23 +17,19 @@ from pathlib import Path
 from typing import Dict, List, Tuple, Optional, Union
 
 def get_input_directory() -> str:
-    """Get the path to the input directory"""
     return os.path.join(os.getcwd(), "input")
 
 
 def ensure_directory_exists(directory_path: str) -> None:
-    """Create directory if it doesn't exist"""
     if not os.path.exists(directory_path):
         os.makedirs(directory_path)
 
 
 def find_files(directory: str, pattern: str) -> List[str]:
-    """Find files matching a wildcard pattern"""
     matches: List[str] = []
-    regex = re.compile("^" + re.escape(pattern).replace(r"\*", ".*") + "$")
     for root, _, filenames in os.walk(directory):
         for filename in filenames:
-            if regex.match(filename):
+            if re.fullmatch(pattern.replace("*", ".*"), filename):
                 matches.append(os.path.join(root, filename))
     return matches
 

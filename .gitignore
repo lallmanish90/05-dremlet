@@ -11,6 +11,7 @@ input/
 __pycache__/
 *.pyc
 *.pyo
+*.egg-info/
 
 # Zip archives
 *.zip

@@ -6,7 +6,7 @@ CODING CONVENTION: NO SHARED CODE
 - Each page is completely self-contained and independent
 """
 
-import streamlit as st
+from dreamlet_cli.compat import st
 import os
 import re
 import time
@@ -14,95 +14,17 @@ import json
 import glob
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional
-from openai import OpenAI
 
-def get_input_directory() -> str:
-    """Get the path to the input directory"""
-    return os.path.join(os.getcwd(), "input")
-
-
-def ensure_directory_exists(directory_path: str) -> None:
-    """Create directory if it doesn't exist"""
-    if not os.path.exists(directory_path):
-        os.makedirs(directory_path)
-
-
-def clean_text_for_tts(text: str) -> str:
-    """Clean text for TTS processing"""
-    text = re.sub(r'\*\*(.*?)\*\*', r'\1', text)
-    text = re.sub(r'\*(.*?)\*', r'\1', text)
-    text = re.sub(r'__(.*?)__', r'\1', text)
-    text = re.sub(r'~~(.*?)~~', r'\1', text)
-    text = re.sub(r'\[(.*?)\]\(.*?\)', r'\1', text)
-    text = re.sub(r'<.*?>', '', text)
-    text = re.sub(r'[#*_~`]', ' ', text)
-    text = re.sub(r'\s+', ' ', text).strip()
-    return text
-
-
-def calculate_word_count(text: str) -> int:
-    """Calculate word count"""
-    return len(clean_text_for_tts(text).split())
-
-
-def estimate_audio_duration(text: str, words_per_minute: int = 150) -> float:
-    """Estimate duration from word count"""
-    return (calculate_word_count(text) / words_per_minute) * 60
-
-
-def get_available_voices() -> List[Dict[str, str]]:
-    """Get OpenAI TTS voices"""
-    return [
-        {"id": "alloy", "name": "Alloy", "gender": "Neutral", "description": "Balanced default voice"},
-        {"id": "echo", "name": "Echo", "gender": "Male", "description": "Clear and steady"},
-        {"id": "fable", "name": "Fable", "gender": "Neutral", "description": "Expressive narrative voice"},
-        {"id": "onyx", "name": "Onyx", "gender": "Male", "description": "Deep voice"},
-        {"id": "nova", "name": "Nova", "gender": "Female", "description": "Bright voice"},
-        {"id": "shimmer", "name": "Shimmer", "gender": "Female", "description": "Warm voice"},
-    ]
-
-
-def tts_cost_estimation(text_or_count, model: str = "tts-1") -> float:
-    """Estimate OpenAI TTS cost"""
-    if isinstance(text_or_count, str):
-        character_count = len(clean_text_for_tts(text_or_count))
-    else:
-        character_count = int(text_or_count)
-
-    rates = {
-        "tts-1": 15.0,
-        "tts-1-hd": 30.0,
-        "gpt-4o-mini-tts": 12.0,
-    }
-    rate = rates.get(model, rates["tts-1"])
-    return (character_count / 1_000_000) * rate
-
-
-def convert_text_to_speech(
-    text: str,
-    output_path: str,
-    voice: str = "alloy",
-    model: str = "tts-1",
-) -> Tuple[bool, str]:
-    """Convert text to speech using OpenAI TTS"""
-    try:
-        api_key = os.environ.get("OPENAI_API_KEY")
-        if not api_key:
-            return False, "OPENAI_API_KEY is not set"
-
-        ensure_directory_exists(os.path.dirname(output_path))
-        client = OpenAI(api_key=api_key)
-        cleaned = clean_text_for_tts(text)
-        response = client.audio.speech.create(
-            model=model,
-            voice=voice,
-            input=cleaned,
-            response_format="mp3",
-        )
-        response.stream_to_file(output_path)
-        return True, "Text-to-speech conversion successful"
-    except Exception as exc:
-        return False, f"Error in text-to-speech conversion: {exc}"
+from dreamlet_cli.openai_tts import (
+    calculate_word_count,
+    clean_text_for_tts,
+    convert_text_to_speech,
+    ensure_directory_exists,
+    estimate_audio_duration,
+    get_available_voices,
+    get_input_directory,
+    tts_cost_estimation,
+)
 
 st.set_page_config(page_title="14 Multilingual TTS - Dreamlet", page_icon="🔊")
 

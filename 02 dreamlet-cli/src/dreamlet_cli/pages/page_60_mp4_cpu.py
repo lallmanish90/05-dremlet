@@ -22,7 +22,7 @@ REPLACED BY:
 - `pages/10.py`
 """
 
-import streamlit as st
+from dreamlet_cli.compat import st
 import os
 import re
 import time
@@ -36,7 +36,6 @@ import ffmpeg
 import subprocess
 
 def ensure_directory_exists(directory_path: str) -> None:
-    """Create directory if it doesn't exist"""
     if not os.path.exists(directory_path):
         os.makedirs(directory_path)
 

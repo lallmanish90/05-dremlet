@@ -6,7 +6,7 @@ CODING CONVENTION: NO SHARED CODE
 - Each page is completely self-contained and independent
 """
 
-import streamlit as st
+from dreamlet_cli.compat import st
 import os
 import re
 import time
@@ -14,71 +14,28 @@ import json
 import glob
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional
-from openai import OpenAI
 
-LM_STUDIO_API_KEY = "lm-studio"
-LM_STUDIO_API_URL = "http://127.0.0.1:1234/v1"
-LM_STUDIO_MODEL = "gemma-3-12b-it-qat"
-PROMPT_TEMPLATE_PATH = os.path.join("config", "prompt.txt")
+from dreamlet_cli.pages.page_08_translator_lm_studio import (
+    SUPPORTED_LANGUAGES,
+    translate_with_lm_studio,
+)
 
 
 def get_input_directory() -> str:
-    """Get the path to the input directory"""
     return os.path.join(os.getcwd(), "input")
 
 
 def ensure_directory_exists(directory_path: str) -> None:
-    """Create directory if it doesn't exist"""
     if not os.path.exists(directory_path):
         os.makedirs(directory_path)
 
 
-def load_prompt_template() -> str:
-    """Load the translation prompt template"""
-    try:
-        if os.path.exists(PROMPT_TEMPLATE_PATH):
-            with open(PROMPT_TEMPLATE_PATH, 'r', encoding='utf-8') as f:
-                return f.read()
-    except Exception as e:
-        st.error(f"Error loading prompt template: {str(e)}")
-
-    return (
-        "You are a professional translator. Translate the following text "
-        "from English to {TARGET_LANGUAGE}.\n\n{TEXT_CONTENT}"
+def translate_text(text: str, target_language: str):
+    target_code = next(
+        (code for code, name in SUPPORTED_LANGUAGES.items() if name.lower() == target_language.lower()),
+        None,
     )
-
-
-def translate_text(text: str, target_language: str) -> Tuple[bool, str, Optional[str]]:
-    """Translate text using LM Studio's OpenAI-compatible API"""
-    if not text or text.strip() == "":
-        return False, "Empty text provided", None
-
-    prompt_template = load_prompt_template()
-    prompt = prompt_template.replace("{TARGET_LANGUAGE}", target_language).replace("{TEXT_CONTENT}", text)
-
-    try:
-        client = OpenAI(
-            base_url=LM_STUDIO_API_URL,
-            api_key=LM_STUDIO_API_KEY,
-        )
-
-        response = client.chat.completions.create(
-            model=LM_STUDIO_MODEL,
-            messages=[
-                {"role": "system", "content": "You are a professional translator."},
-                {"role": "user", "content": prompt},
-            ],
-            temperature=0.3,
-            max_tokens=4000,
-        )
-
-        if response and response.choices and response.choices[0].message and response.choices[0].message.content:
-            return True, "Translation successful", response.choices[0].message.content.strip()
-
-        return False, "Unexpected API response format", None
-
-    except Exception as e:
-        return False, f"Error in translation: {str(e)}", None
+    return translate_with_lm_studio(text, target_code or target_language.lower())
 
 st.set_page_config(page_title="13 Convert Text to multiple languages - Dreamlet", page_icon="🌐")
 

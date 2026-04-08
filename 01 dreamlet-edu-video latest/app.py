@@ -1,118 +1,377 @@
-import streamlit as st
 import os
+from pathlib import Path
+import re
+import shutil
+
+import streamlit as st
 from PIL import Image
 
-# Local utility functions (moved from utils modules)
+
+APP_DIR = Path(__file__).resolve().parent
+PAGES_DIR = APP_DIR / "pages"
+
+
 def ensure_directory_exists(directory_path: str) -> None:
     """Create directory if it doesn't exist"""
     if not os.path.exists(directory_path):
         os.makedirs(directory_path)
 
+
 def get_input_directory() -> str:
     """Get the path to the input directory"""
     return os.path.join(os.getcwd(), "input")
 
-def increase_image_decompression_limit():
-    """Increases the Pillow image decompression bomb limit to avoid errors with very large images"""
-    new_limit = 3840 * 2160 * 50  # Approximately 415 million pixels
-    Image.MAX_IMAGE_PIXELS = new_limit
 
-# Increase the Pillow decompression bomb limit for large images
-increase_image_decompression_limit()
+def increase_image_decompression_limit() -> None:
+    """Increase Pillow's decompression bomb limit for very large images"""
+    Image.MAX_IMAGE_PIXELS = 3840 * 2160 * 50
 
-# Set up the page configuration
-st.set_page_config(
-    page_title="Dreamlet Educational Video Production System",
-    page_icon="🎓",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
 
-# Ensure input directory exists
-ensure_directory_exists(get_input_directory())
+def page(file_name: str, title: str, icon: str = ""):
+    return st.Page(str(PAGES_DIR / file_name), title=title, icon=icon)
 
-# Main page
-st.title("Dreamlet Educational Video Production System")
-st.subheader("Educational Video Production Automation")
 
-# Introduction
-st.markdown("""
-This application streamlines the creation of educational videos by automating various aspects of the production pipeline.
-The system facilitates the transformation of educational content from transcript and slide files into professional video presentations.
+def get_output_directory() -> str:
+    """Get the path to the output directory"""
+    return os.path.join(os.getcwd(), "output")
 
-### How to Use This Application:
-1. **Start with the Dashboard** (📊) to get an overview of your projects and system status
-2. **Use the Workflow Manager** (⚙️) to create automated processing workflows
-3. **Process step by step** using pages 01-10 for individual workflow steps
-4. **Monitor progress** using the System Monitor (📊) to track performance and view logs
-5. **Customize your experience** in User Settings (⚙️) for preferences and help
 
-### Quick Start Guide:
-1. Add your content files to the `input/` directory
-2. Visit the **Dashboard** to see your projects
-3. Use **Workflow Manager** to set up automated processing
-4. Monitor progress in **System Monitor**
-5. Access help and tutorials in **User Settings**
+def build_homepage_context() -> dict:
+    input_dir = Path(get_input_directory())
+    output_dir = Path(get_output_directory())
 
-### Input Files Required:
-- **Transcript Files** (`.txt` or `.md`): Text to be spoken in the educational video
-- **Slide Files** (`.txt` or `.md`): Descriptions of what will appear visually for each slide
-- **Presentation Files** (`.pptx`): Visual slides based on slide file descriptions
+    input_counts = {
+        "courses": 0,
+        "lectures": 0,
+        "aaa_files": 0,
+        "eee_files": 0,
+        "transcript_files": 0,
+        "slide_files": 0,
+        "pptx_files": 0,
+    }
+    generated_counts = {
+        "text_section_files": 0,
+        "summary_section_files": 0,
+        "audio_folders": 0,
+        "image_folders": 0,
+        "language_folders": 0,
+        "mp4_files": 0,
+    }
 
-### Enhanced User Experience Features:
-- **📊 Dashboard**: Comprehensive overview of all your video production projects with real-time status tracking
-- **⚙️ Workflow Manager**: Create templates, automate workflows, and manage batch processing
-- **📊 System Monitor**: Monitor system health, view logs, and track performance metrics
-- **⚙️ User Settings**: Customize preferences, configure notifications, and access help documentation
+    if input_dir.exists():
+        input_counts["courses"] = sum(
+            1 for path in input_dir.iterdir() if path.is_dir() and not path.name.startswith(".")
+        )
 
-### Core Processing Workflow:
-1. **Adjust**: Make necessary adjustments to transcript and slide files
-2. **Rename**: Fix incorrectly named files
-3. **Count**: Verify alignment between transcript sections, slide descriptions, and presentation slides
-4. **Save Text**: Break transcript files into sections for TTS processing
-5. **TTS**: Convert transcript sections to MP3 audio files
-6. **4K Image**: Generate high-resolution images from presentation slides
-7. **MP4**: Combine audio and images to create final educational videos
-8. **Multilingual Text**: Handle multilingual text processing
-9. **Multilingual TTS**: Handle multilingual text-to-speech processing
-10. **MP4 GPU**: GPU-accelerated video processing for enhanced performance
-""")
+        for path in input_dir.rglob("*"):
+            if path.is_dir():
+                if re.search(r"lecture\s*\d+", path.name, re.IGNORECASE):
+                    input_counts["lectures"] += 1
+                if path.name.endswith(" audio"):
+                    generated_counts["audio_folders"] += 1
+                if path.name.endswith(" image"):
+                    generated_counts["image_folders"] += 1
+                continue
 
-# Directory structure information
-st.header("Folder Structure")
-st.markdown("""
-The application operates directly on the input folder structure. All file modifications and generated assets
-will be created within the same folder structure:
+            if not path.is_file():
+                continue
 
-```
-input/
-├── course_01/
-│   ├── lecture_01/
-│   │   ├── transcript.txt                 # Original transcript file
-│   │   ├── slides.txt                     # Original slide description file
-│   │   ├── presentation.pptx              # Original presentation file
-│   │   ├── audio/                         # Generated audio files
-│   │   │   └── slide_01.mp3, slide_02.mp3, etc.
-│   │   ├── images/                        # Extracted slide images
-│   │   │   └── slide_01.png, slide_02.png, etc.
-│   │   ├── sections/                      # Text broken into sections
-│   │   │   └── section_01.txt, section_02.txt, etc.
-│   │   └── video.mp4                      # Final generated video
-│   └── lecture_02/
-│       └── ... (same structure)
-└── course_02/
-    └── ... (same structure)
-```
-""")
+            name = path.name
+            if re.match(r"^\d+-AAA\.(md|txt)$", name):
+                input_counts["aaa_files"] += 1
+            elif re.match(r"^\d+-EEE\.(md|txt)$", name):
+                input_counts["eee_files"] += 1
+            elif re.match(r"^Lecture\s*\d+\.(md|txt)$", name, re.IGNORECASE):
+                input_counts["transcript_files"] += 1
+            elif re.match(r"^\d+-slides\.(md|txt)$", name, re.IGNORECASE):
+                input_counts["slide_files"] += 1
+            elif name.lower().endswith(".pptx"):
+                input_counts["pptx_files"] += 1
 
-# API Key Status check
-st.header("API Key Status")
-# Hardcoded API key as requested by user for local use only
-hardcoded_api_key = os.environ.get("OPENAI_API_KEY", "")
-# Also check environment variable
-env_api_key = os.environ.get("OPENAI_API_KEY")
-# Use environment variable if set, otherwise use hardcoded key
-api_key = env_api_key if env_api_key else hardcoded_api_key
+            parent_name = path.parent.name
+            if parent_name == "English text":
+                generated_counts["text_section_files"] += 1
+            elif parent_name == "English Summary text":
+                generated_counts["summary_section_files"] += 1
 
-st.success("✅ OpenAI API key is configured. Text-to-speech and translation features are ready to use.")
+    if output_dir.exists():
+        generated_counts["language_folders"] = sum(
+            1 for path in output_dir.iterdir() if path.is_dir() and not path.name.startswith(".")
+        )
+        generated_counts["mp4_files"] = sum(
+            1 for path in output_dir.rglob("*") if path.is_file() and path.suffix.lower() == ".mp4"
+        )
 
+    blockers = []
+    if input_counts["courses"] == 0:
+        blockers.append("No course folders found in `input/`.")
+    if input_counts["aaa_files"] != input_counts["eee_files"]:
+        blockers.append(
+            f"AAA / EEE mismatch detected: {input_counts['aaa_files']} AAA vs {input_counts['eee_files']} EEE."
+        )
+    if not shutil.which("ffmpeg"):
+        blockers.append("`ffmpeg` is not available in PATH.")
+    if not shutil.which("libreoffice"):
+        blockers.append("`libreoffice` is not available in PATH.")
+    if not os.environ.get("OPENAI_API_KEY"):
+        blockers.append("`OPENAI_API_KEY` is not set for OpenAI-powered pages.")
+
+    return {
+        "input": input_counts,
+        "generated": generated_counts,
+        "blockers": blockers,
+    }
+
+
+def get_recommended_next_step(context: dict) -> dict:
+    input_counts = context["input"]
+    generated = context["generated"]
+
+    if input_counts["aaa_files"] > 0 or input_counts["eee_files"] > 0:
+        return {
+            "title": "Adjust AAA EEE",
+            "reason": "Raw AAA / EEE source files were detected and should be normalized first.",
+        }
+    if input_counts["transcript_files"] > 0 and generated["text_section_files"] == 0:
+        return {
+            "title": "Save Text",
+            "reason": "Lecture transcript files exist, but section text files have not been generated yet.",
+        }
+    if input_counts["pptx_files"] > 0 and generated["image_folders"] == 0:
+        return {
+            "title": "4K Image Final",
+            "reason": "Presentations were detected, but no generated image folders exist yet.",
+        }
+    if generated["text_section_files"] > 0 and generated["audio_folders"] == 0:
+        return {
+            "title": "TTS Kokoro",
+            "reason": "Section text files exist, but no generated audio folders were found.",
+        }
+    if generated["audio_folders"] > 0 and generated["image_folders"] > 0 and generated["mp4_files"] == 0:
+        return {
+            "title": "MP4 Final",
+            "reason": "Audio and image folders exist, so the next step is rendering MP4 output.",
+        }
+    if generated["mp4_files"] > 0:
+        return {
+            "title": "Verify MP4",
+            "reason": "Rendered MP4 files exist and should be verified before you move on.",
+        }
+    return {
+        "title": "Count New",
+        "reason": "Use validation to inspect the current filesystem state and identify the next workflow step.",
+    }
+
+
+def build_workflow_status(context: dict) -> list[dict]:
+    input_counts = context["input"]
+    generated = context["generated"]
+
+    def status(complete: bool, ready: bool) -> str:
+        if complete:
+            return "complete"
+        if ready:
+            return "ready"
+        return "not started"
+
+    return [
+        {
+            "name": "Prepare",
+            "status": status(
+                complete=(input_counts["aaa_files"] > 0 or input_counts["transcript_files"] > 0 or input_counts["slide_files"] > 0),
+                ready=(input_counts["courses"] > 0),
+            ),
+            "detail": "AAA / EEE, transcript, slide, or PPTX source files are present.",
+        },
+        {
+            "name": "Split Text",
+            "status": status(
+                complete=(generated["text_section_files"] > 0 or generated["summary_section_files"] > 0),
+                ready=(input_counts["aaa_files"] > 0 or input_counts["transcript_files"] > 0),
+            ),
+            "detail": "Section files in `English text` / `English Summary text` folders.",
+        },
+        {
+            "name": "Generate Images",
+            "status": status(
+                complete=(generated["image_folders"] > 0),
+                ready=(input_counts["pptx_files"] > 0),
+            ),
+            "detail": "Lecture image folders such as `English image`.",
+        },
+        {
+            "name": "Generate Audio",
+            "status": status(
+                complete=(generated["audio_folders"] > 0),
+                ready=(generated["text_section_files"] > 0),
+            ),
+            "detail": "Lecture audio folders such as `English audio`.",
+        },
+        {
+            "name": "Validate",
+            "status": status(
+                complete=(generated["mp4_files"] > 0),
+                ready=(generated["audio_folders"] > 0 and generated["image_folders"] > 0),
+            ),
+            "detail": "Counts and prerequisites can be checked once audio and images exist.",
+        },
+        {
+            "name": "Render Video",
+            "status": status(
+                complete=(generated["mp4_files"] > 0),
+                ready=(generated["audio_folders"] > 0 and generated["image_folders"] > 0),
+            ),
+            "detail": "MP4 output under `output/`.",
+        },
+    ]
+
+
+def build_navigation():
+    return {
+        "Overview": [
+            st.Page(render_homepage, title="Home", icon="🎓", default=True),
+        ],
+        "Core Workflow": [
+            page("01_Adjust_AAA_EEE.py", "Adjust AAA EEE", "📄"),
+            page("02_Rename.py", "Rename", "✏️"),
+            page("03_Save_Text.py", "Save Text", "💾"),
+            page("04_Remove_unwanted.py", "Remove Unwanted", "🧹"),
+            page("05_Move_Slides.py", "Move Slides", "📄"),
+            page("06.py", "4K Image Final", "🖼️"),
+            page("07_TTS_Kokoro.py", "TTS Kokoro", "🔊"),
+        ],
+        "Translation & Multilingual": [
+            page("08_Ollama.py", "Ollama", "🌍"),
+            page("08_Translator_LM_Studio.py", "Translator LM Studio", "🌐"),
+            page("15_inworld_TTS.py", "Inworld TTS", "🗣️"),
+            page("52_multilingual_folder_structure.py", "Multilingual Folder Structure", "🌍"),
+            page("53_Convert_Text_to_multiple_languages.py", "Convert Text to Multiple Languages", "🌐"),
+            page("54_Multilingual_TTS.py", "Multilingual TTS", "🔊"),
+            page("55_TTS_Open_AI.py", "TTS Open AI", "🗣️"),
+        ],
+        "Validation & Video": [
+            page("09_Count_new.py", "Count New", "🔢"),
+            page("09_Fix_for_mp4.py", "Fix for MP4", "🔧"),
+            page("10.py", "MP4 Final", "🎬"),
+            page("11_Verify_mp4.py", "Verify MP4", "📊"),
+        ],
+        "Maintenance & Recovery": [
+            page("12_Delete.py", "Delete", "🗑️"),
+            page("13_Delete_folder.py", "Delete Folder", "🗂️"),
+            page("14_restore_pptx.py", "Restore PPTX", "↩️"),
+        ],
+        "Legacy & Alternate": [
+            page("06_4K_Image.py", "4K Image", "🖼️"),
+            page("06_4K_Image_pptx_zip.py", "4K Image PPTX ZIP", "🖼️"),
+            page("09_Count.py", "Count", "🔢"),
+            page("10_mp4_GPU.py", "MP4 GPU", "🎬"),
+            page("58_Translator_Lecto.py", "Translator Lecto", "🌐"),
+            page("60_mp4_CPU.py", "MP4 CPU", "🎬"),
+        ],
+    }
+
+
+def render_homepage() -> None:
+    context = build_homepage_context()
+    next_step = get_recommended_next_step(context)
+    workflow_status = build_workflow_status(context)
+
+    st.title("Dreamlet Edu Video")
+    st.subheader("File-based workflow for turning course materials into audio, images, and videos.")
+    st.caption("This homepage reflects the current state of the files on disk, not a generic workflow description.")
+
+    st.header("Input Status")
+    input_counts = context["input"]
+    input_cols = st.columns(7)
+    input_metrics = [
+        ("Courses", input_counts["courses"]),
+        ("Lectures", input_counts["lectures"]),
+        ("AAA Files", input_counts["aaa_files"]),
+        ("EEE Files", input_counts["eee_files"]),
+        ("Transcripts", input_counts["transcript_files"]),
+        ("Slides", input_counts["slide_files"]),
+        ("PPTX", input_counts["pptx_files"]),
+    ]
+    for column, (label, value) in zip(input_cols, input_metrics):
+        with column:
+            st.metric(label, value)
+
+    st.header("Current Blockers")
+    if context["blockers"]:
+        for blocker in context["blockers"]:
+            st.warning(blocker)
+    else:
+        st.success("No immediate blockers detected from the current filesystem and environment checks.")
+
+    st.header("Recommended Next Step")
+    st.write(f"**{next_step['title']}**")
+    st.caption(next_step["reason"])
+
+    st.header("Workflow Status")
+    for stage in workflow_status:
+        st.write(f"**{stage['name']}** — {stage['status'].title()}")
+        st.caption(stage["detail"])
+
+    st.header("Generated Assets")
+    generated = context["generated"]
+    output_cols = st.columns(4)
+    output_metrics = [
+        ("MP4 Files", generated["mp4_files"]),
+        ("Language Folders", generated["language_folders"]),
+        ("Audio Folders", generated["audio_folders"]),
+        ("Image Folders", generated["image_folders"]),
+    ]
+    for column, (label, value) in zip(output_cols, output_metrics):
+        with column:
+            st.metric(label, value)
+
+    with st.expander("Expected Input Naming", expanded=False):
+        st.markdown(
+            """
+- `NN-AAA.md` / `NN-EEE.md` for raw AAA / EEE generation files
+- `Lecture NN.md` for transcript files
+- `NN-slides.md` for slide description files
+- `NN.pptx` for presentations
+"""
+        )
+
+    with st.expander("Filesystem Layout Reference", expanded=False):
+        st.markdown(
+            """
+Dreamlet works directly on the filesystem:
+
+- `input/` contains course folders and lecture assets
+- `English text`, `English audio`, and `English image` live under lecture folders
+- `output/` stores rendered MP4 files
+"""
+        )
+
+    with st.expander("Dependency Notes", expanded=False):
+        st.markdown(
+            """
+Important system dependencies used by the workflow include:
+
+- `ffmpeg`
+- `libreoffice`
+- `poppler`
+- provider-specific services such as Kokoro or LM Studio when those pages are used
+"""
+        )
+
+
+def main() -> None:
+    increase_image_decompression_limit()
+    ensure_directory_exists(get_input_directory())
+
+    st.set_page_config(
+        page_title="Dreamlet Educational Video Production System",
+        page_icon="🎓",
+        layout="wide",
+        initial_sidebar_state="expanded",
+    )
+
+    navigation = st.navigation(build_navigation(), position="sidebar", expanded=True)
+    navigation.run()
+
+
+main()
