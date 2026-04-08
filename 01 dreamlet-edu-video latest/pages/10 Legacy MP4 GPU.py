@@ -6,7 +6,7 @@ CODING CONVENTION: NO SHARED CODE
 - Each page is completely self-contained and independent
 
 STATUS: LEGACY
-PURPOSE: Older CPU-only MP4 generation page retained as a fallback reference path.
+PURPOSE: Older GPU-focused MP4 generation page for lecture videos.
 MAIN INPUTS:
 - lecture image folders
 - lecture audio folders
@@ -17,9 +17,9 @@ REQUIRED CONFIG / ASSETS:
 EXTERNAL SERVICES:
 - local `ffmpeg` / `ffprobe`
 HARDWARE ASSUMPTIONS:
-- CPU-only rendering path
+- hardware acceleration where available
 REPLACED BY:
-- `pages/10.py`
+- `pages/10 Render MP4 Videos.py`
 """
 
 import streamlit as st
@@ -28,20 +28,21 @@ import re
 import time
 import glob
 from pathlib import Path
+import platform
+import subprocess
 from typing import Dict, List, Tuple, Optional
 import numpy as np
 import cv2
 from PIL import Image
 import ffmpeg
-import subprocess
 
+# Local utility functions (moved from utils.file_operations)
 def ensure_directory_exists(directory_path: str) -> None:
     """Create directory if it doesn't exist"""
     if not os.path.exists(directory_path):
         os.makedirs(directory_path)
 
-
-st.set_page_config(page_title="11 MP4 - Dreamlet", page_icon="🎬")
+st.set_page_config(page_title="10 MP4 (GPU) - Dreamlet", page_icon="🎬")
 
 # Define fixed input and output directories
 INPUT_DIR = os.path.join(os.getcwd(), "input")
@@ -87,8 +88,8 @@ def find_image_files(lecture_dir: str, language: str = "English") -> List[str]:
     lang_images_dir = os.path.join(lecture_dir, f"{language} image")
     if os.path.exists(lang_images_dir) and os.path.isdir(lang_images_dir):
         image_files = get_sorted_files(lang_images_dir,
-                                       file_type="image",
-                                       full_path=True)
+                                      file_type="image",
+                                      full_path=True)
         if image_files:
             return image_files
     
@@ -97,8 +98,8 @@ def find_image_files(lecture_dir: str, language: str = "English") -> List[str]:
         english_images_dir = os.path.join(lecture_dir, "English image")
         if os.path.exists(english_images_dir) and os.path.isdir(english_images_dir):
             image_files = get_sorted_files(english_images_dir,
-                                           file_type="image",
-                                           full_path=True)
+                                          file_type="image",
+                                          full_path=True)
             if image_files:
                 return image_files
 
@@ -107,8 +108,8 @@ def find_image_files(lecture_dir: str, language: str = "English") -> List[str]:
 
 
 def find_audio_files(lecture_dir: str,
-                     language: str = "English",
-                     summary: bool = False) -> List[str]:
+                    language: str = "English",
+                    summary: bool = False) -> List[str]:
     """
     Find all audio files in a lecture directory for a specific language
     
@@ -125,8 +126,8 @@ def find_audio_files(lecture_dir: str,
     lang_audio_dir = os.path.join(lecture_dir, folder_name)
     if os.path.exists(lang_audio_dir) and os.path.isdir(lang_audio_dir):
         audio_files = get_sorted_files(lang_audio_dir,
-                                       file_type="audio",
-                                       full_path=True)
+                                      file_type="audio",
+                                      full_path=True)
         if audio_files:
             return audio_files
 
@@ -151,7 +152,7 @@ def find_processed_lectures() -> Dict[str, Dict[str, Dict]]:
     for root, dirs, files in os.walk(INPUT_DIR):
         # Skip utility folders
         if any(util_folder in root for util_folder in
-               ["all_pptx", "all_slides", "all_transcripts"]):
+              ["all_pptx", "all_slides", "all_transcripts"]):
             continue
 
         # Skip non-lecture folders (must contain at least English language folders)
@@ -195,10 +196,10 @@ def find_processed_lectures() -> Dict[str, Dict[str, Dict]]:
             course = path_components[1]
             section = path_components[2]
         elif len(path_components
-                 ) > 2:  # subject/course/lecture or course/section/lecture
+                ) > 2:  # subject/course/lecture or course/section/lecture
             # Try to determine if the second component is a course or a section
             if any(section_keyword in path_components[1].lower()
-                   for section_keyword in ["section", "part", "module"]):
+                  for section_keyword in ["section", "part", "module"]):
                 course = path_components[0]
                 section = path_components[1]
             else:
@@ -209,7 +210,7 @@ def find_processed_lectures() -> Dict[str, Dict[str, Dict]]:
 
         # If lecture name doesn't contain "Lecture", try to identify lecture number from folder name
         lecture_match = re.search(r'lecture\s*(\d+)', lecture_name,
-                                  re.IGNORECASE)
+                                 re.IGNORECASE)
         if lecture_match:
             lecture_display = f"Lecture {lecture_match.group(1)}"
         else:
@@ -241,13 +242,13 @@ def find_processed_lectures() -> Dict[str, Dict[str, Dict]]:
             # Find regular audio and image files
             image_files = find_image_files(lecture_dir, language)
             audio_files = find_audio_files(lecture_dir,
-                                           language,
-                                           summary=False)
+                                          language,
+                                          summary=False)
 
             # Find summary audio files
             summary_audio_files = find_audio_files(lecture_dir,
-                                                   language,
-                                                   summary=True)
+                                                  language,
+                                                  summary=True)
 
             # Check if we have both regular and summary audio files
             has_regular_audio = len(audio_files) > 0
@@ -279,8 +280,8 @@ def find_processed_lectures() -> Dict[str, Dict[str, Dict]]:
         # Add lecture data with English as default language
         has_english_summary = "English Summary audio" in dirs
         english_summary_audio_files = find_audio_files(lecture_dir,
-                                                       "English",
-                                                       summary=True)
+                                                      "English",
+                                                      summary=True)
 
         organized_data[subject_key][course_key][section_key][
             lecture_display] = {
@@ -316,8 +317,8 @@ def find_processed_lectures() -> Dict[str, Dict[str, Dict]]:
 
 
 def get_sorted_files(directory: str,
-                     file_type: str,
-                     full_path: bool = False) -> List[str]:
+                    file_type: str,
+                    full_path: bool = False) -> List[str]:
     """
     Get sorted list of files of a specific type
     
@@ -348,8 +349,8 @@ def get_sorted_files(directory: str,
 
     # Sort numerically by the number in the filename
     sorted_files = sorted(files,
-                          key=lambda f: int(os.path.splitext(f)[0])
-                          if os.path.splitext(f)[0].isdigit() else 999)
+                         key=lambda f: int(os.path.splitext(f)[0])
+                         if os.path.splitext(f)[0].isdigit() else 999)
 
     # Return full paths if requested
     if full_path:
@@ -440,12 +441,121 @@ def upscale_image(
     return img_array
 
 
-def create_video_from_images_and_audio(image_files: List[str],
-                                       audio_files: List[str],
-                                       output_path: str,
-                                       fps: int = 3) -> Tuple[bool, str]:
+def detect_hardware_acceleration() -> Tuple[str, str]:
     """
-    Generate an MP4 video from images and audio files
+    Detect available hardware acceleration for video encoding/decoding
+    
+    Returns:
+        Tuple of (encoder, decoder) names
+    """
+    system = platform.system()
+    machine = platform.machine()
+
+    # Default to CPU encoding/decoding
+    encoder = 'libx264'
+    decoder = None
+
+    if system == 'Windows':
+        # Check if NVIDIA GPU with NVENC is available
+        result = subprocess.run(['ffmpeg', '-encoders'], capture_output=True, text=True)
+        if 'h264_nvenc' in result.stdout:
+            encoder = 'h264_nvenc'
+            decoder = 'cuda'
+        
+    elif system == 'Darwin' and 'arm' in machine.lower():
+        # Apple Silicon (M1, M2, etc.)
+        encoder = 'h264_videotoolbox'
+        decoder = 'videotoolbox'
+        
+    elif system == 'Linux':
+        # Check for NVIDIA on Linux
+        result = subprocess.run(['ffmpeg', '-encoders'], capture_output=True, text=True)
+        if 'h264_nvenc' in result.stdout:
+            encoder = 'h264_nvenc'
+            decoder = 'cuda'
+        # Check for Intel QuickSync
+        elif 'h264_qsv' in result.stdout:
+            encoder = 'h264_qsv'
+            decoder = 'qsv'
+        # Check for VAAPI
+        elif 'h264_vaapi' in result.stdout:
+            encoder = 'h264_vaapi'
+            decoder = 'vaapi'
+    
+    return encoder, decoder
+
+
+def build_ffmpeg_command(
+    input_files: List[str], 
+    output_file: str, 
+    encoder: str, 
+    decoder: str = None,
+    fps: int = 3
+) -> List[str]:
+    """
+    Build an FFmpeg command with appropriate hardware acceleration parameters
+    
+    Args:
+        input_files: List of input file paths
+        output_file: Output file path
+        encoder: Encoder to use ('h264_nvenc', 'h264_videotoolbox', 'libx264', etc.)
+        decoder: Decoder to use ('cuda', 'videotoolbox', 'qsv', 'vaapi', None)
+        fps: Frames per second for video
+    
+    Returns:
+        List of command arguments for subprocess
+    """
+    cmd = ['ffmpeg']
+    
+    # Add hardware acceleration for decoding if available
+    if decoder:
+        if decoder == 'cuda':
+            cmd += ['-hwaccel', 'cuda']
+        elif decoder == 'videotoolbox':
+            cmd += ['-hwaccel', 'videotoolbox']
+        elif decoder == 'qsv':
+            cmd += ['-hwaccel', 'qsv']
+        elif decoder == 'vaapi':
+            cmd += ['-hwaccel', 'vaapi', '-vaapi_device', '/dev/dri/renderD128']
+    
+    # Add input file(s)
+    if len(input_files) == 1:
+        cmd += ['-i', input_files[0]]
+    else:
+        # For multiple inputs, we'll need to adjust based on the specific use case
+        pass
+    
+    # Add encoder-specific options
+    cmd += ['-c:v', encoder]
+    
+    if encoder == 'h264_nvenc':
+        cmd += ['-preset', 'p5', '-rc', 'vbr', '-cq', '23', '-b:v', '5M']
+    elif encoder == 'h264_videotoolbox':
+        cmd += ['-b:v', '5M']  # VideoToolbox doesn't support CRF
+    elif encoder == 'h264_qsv':
+        cmd += ['-preset', 'medium', '-b:v', '5M']
+    elif encoder == 'h264_vaapi':
+        cmd += ['-quality', 'good', '-b:v', '5M']
+    else:  # libx264 or other software encoders
+        cmd += ['-preset', 'medium', '-crf', '23']
+    
+    # Audio settings (copy from input or encode with AAC)
+    cmd += ['-c:a', 'aac', '-b:a', '192k']
+    
+    # Output file
+    cmd += [output_file]
+    
+    return cmd
+
+
+def create_video_from_images_and_audio(
+    image_files: List[str],
+    audio_files: List[str],
+    output_path: str,
+    fps: int = 3
+) -> Tuple[bool, str]:
+    """
+    Generate an MP4 video from images and audio files using hardware acceleration
     
     Args:
         image_files: List of image file paths
@@ -460,6 +570,9 @@ def create_video_from_images_and_audio(image_files: List[str],
         # Create output directory if it doesn't exist
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
+        # Detect hardware acceleration capabilities
+        encoder, decoder = detect_hardware_acceleration()
+        
         # Create a temporary directory
         import tempfile
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -473,14 +586,11 @@ def create_video_from_images_and_audio(image_files: List[str],
             segment_files = []
 
             # Process each image and corresponding audio
-            for i, (img_file,
-                    audio_file) in enumerate(zip(image_files, audio_files)):
+            for i, (img_file, audio_file) in enumerate(zip(image_files, audio_files)):
                 # Upscale image to 4K
                 img = upscale_image(img_file)
-                upscaled_img_path = os.path.join(temp_dir,
-                                                 f"upscaled_{i:03d}.png")
-                cv2.imwrite(upscaled_img_path,
-                            cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
+                upscaled_img_path = os.path.join(temp_dir, f"upscaled_{i:03d}.png")
+                cv2.imwrite(upscaled_img_path, cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
 
                 # Get audio duration
                 duration_cmd = [
@@ -490,24 +600,59 @@ def create_video_from_images_and_audio(image_files: List[str],
                 ]
 
                 duration_result = subprocess.run(duration_cmd,
-                                                 capture_output=True,
-                                                 text=True,
-                                                 check=True)
+                                                capture_output=True,
+                                                text=True,
+                                                check=True)
 
                 duration = float(duration_result.stdout.strip())
 
                 # Create segment with image and audio
-                segment_path = os.path.join(segments_dir,
-                                            f"segment_{i:03d}.mp4")
+                segment_path = os.path.join(segments_dir, f"segment_{i:03d}.mp4")
                 segment_files.append(segment_path)
 
-                # Generate video segment
-                segment_cmd = [
-                    "ffmpeg", "-y", "-loop", "1", "-framerate",
-                    str(fps), "-i", upscaled_img_path, "-i", audio_file,
-                    "-c:v", "libx264", "-tune", "stillimage", "-c:a", "aac",
-                    "-b:a", "192k", "-pix_fmt", "yuv420p", "-shortest", "-t",
-                    str(duration), segment_path
+                # Build the segment command with hardware acceleration
+                segment_cmd = ['ffmpeg', '-y']
+                
+                # Add hardware acceleration if available
+                if decoder:
+                    if decoder == 'cuda':
+                        segment_cmd += ['-hwaccel', 'cuda']
+                    elif decoder == 'videotoolbox':
+                        segment_cmd += ['-hwaccel', 'videotoolbox']
+                    elif decoder == 'qsv':
+                        segment_cmd += ['-hwaccel', 'qsv']
+                    elif decoder == 'vaapi':
+                        segment_cmd += ['-hwaccel', 'vaapi', '-vaapi_device', '/dev/dri/renderD128']
+                
+                # Add input files and output parameters
+                segment_cmd += [
+                    '-loop', '1', 
+                    '-framerate', str(fps), 
+                    '-i', upscaled_img_path, 
+                    '-i', audio_file,
+                    '-c:v', encoder
+                ]
+                
+                # Add encoder-specific options
+                if encoder == 'h264_nvenc':
+                    segment_cmd += ['-preset', 'p5', '-rc', 'vbr', '-cq', '23', '-b:v', '5M']
+                elif encoder == 'h264_videotoolbox':
+                    segment_cmd += ['-b:v', '5M']  # VideoToolbox doesn't support CRF
+                elif encoder == 'h264_qsv':
+                    segment_cmd += ['-preset', 'medium', '-b:v', '5M']
+                elif encoder == 'h264_vaapi':
+                    segment_cmd += ['-quality', 'good', '-b:v', '5M']
+                else:  # libx264 or other software encoders
+                    segment_cmd += ['-tune', 'stillimage', '-preset', 'medium', '-crf', '23']
+                
+                # Add common parameters
+                segment_cmd += [
+                    '-c:a', 'aac',
+                    '-b:a', '192k',
+                    '-pix_fmt', 'yuv420p',
+                    '-shortest',
+                    '-t', str(duration),
+                    segment_path
                 ]
 
                 subprocess.run(segment_cmd, check=True, capture_output=True)
@@ -518,7 +663,7 @@ def create_video_from_images_and_audio(image_files: List[str],
                 for segment in segment_files:
                     f.write(f"file '{segment}'\n")
 
-            # Concatenate all segments
+            # Concatenate all segments (hardware acceleration not important here since we're just copying streams)
             concat_cmd = [
                 "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i",
                 concat_file, "-c", "copy", temp_video
@@ -526,16 +671,46 @@ def create_video_from_images_and_audio(image_files: List[str],
 
             subprocess.run(concat_cmd, check=True, capture_output=True)
 
-            # Optimize for streaming with proper encoding
-            final_cmd = [
-                "ffmpeg", "-y", "-i", temp_video, "-c:v", "libx264", "-preset",
-                "medium", "-crf", "22", "-c:a", "aac", "-b:a", "192k",
-                "-movflags", "faststart", output_path
+            # Final encoding with hardware acceleration
+            final_cmd = ['ffmpeg', '-y']
+            
+            # Add hardware acceleration if available
+            if decoder:
+                if decoder == 'cuda':
+                    final_cmd += ['-hwaccel', 'cuda']
+                elif decoder == 'videotoolbox':
+                    final_cmd += ['-hwaccel', 'videotoolbox']
+                elif decoder == 'qsv':
+                    final_cmd += ['-hwaccel', 'qsv']
+                elif decoder == 'vaapi':
+                    final_cmd += ['-hwaccel', 'vaapi', '-vaapi_device', '/dev/dri/renderD128']
+            
+            # Add input file
+            final_cmd += ['-i', temp_video, '-c:v', encoder]
+            
+            # Add encoder-specific options
+            if encoder == 'h264_nvenc':
+                final_cmd += ['-preset', 'p5', '-rc', 'vbr', '-cq', '23', '-b:v', '5M']
+            elif encoder == 'h264_videotoolbox':
+                final_cmd += ['-b:v', '5M']  # VideoToolbox doesn't support CRF
+            elif encoder == 'h264_qsv':
+                final_cmd += ['-preset', 'medium', '-b:v', '5M']
+            elif encoder == 'h264_vaapi':
+                final_cmd += ['-quality', 'good', '-b:v', '5M']
+            else:  # libx264 or other software encoders
+                final_cmd += ['-preset', 'medium', '-crf', '22']
+            
+            # Add common parameters
+            final_cmd += [
+                '-c:a', 'aac',
+                '-b:a', '192k',
+                '-movflags', 'faststart',
+                output_path
             ]
 
             subprocess.run(final_cmd, check=True, capture_output=True)
 
-            return True, f"Video successfully generated at {output_path}"
+            return True, f"Video successfully generated at {output_path} using {encoder} encoder"
 
     except subprocess.CalledProcessError as e:
         return False, f"FFmpeg error: {e.stderr.decode() if hasattr(e, 'stderr') else str(e)}"
@@ -544,10 +719,10 @@ def create_video_from_images_and_audio(image_files: List[str],
 
 
 def generate_mp4_for_lecture(lecture_data: Dict,
-                             fps: int,
-                             language: str = "English",
-                             summary: bool = False,
-                             force_create: bool = False) -> Dict:
+                            fps: int,
+                            language: str = "English",
+                            summary: bool = False,
+                            force_create: bool = False) -> Dict:
     """
     Generate MP4 for a lecture in the specified language
     
@@ -624,7 +799,7 @@ def generate_mp4_for_lecture(lecture_data: Dict,
             result["output_path"] = output_path
             return result
 
-        # Generate MP4
+        # Generate MP4 with hardware acceleration
         success, message = create_video_from_images_and_audio(
             image_files, audio_files, output_path, fps)
 
@@ -646,15 +821,23 @@ def generate_mp4_for_lecture(lecture_data: Dict,
 
 
 def main():
-    st.title("mp4 - CPU")
+    st.title("mp4 - GPU")
     st.write(
-        "Combine audio and images to create final educational videos in multiple languages."
+        "Combine audio and images to create final educational videos with hardware acceleration."
     )
 
     # Introduction in a collapsible section
     with st.expander("About this page"):
         st.markdown("""
-        This page combines slide images with their corresponding audio files to create educational videos in different languages.
+        This advanced version of the MP4 generator combines slide images with audio files to create
+        educational videos while using hardware acceleration when available.
+        
+        ### Hardware Acceleration Features:
+        - **Automatic Detection**: Identifies best hardware encoder for your system
+        - **NVIDIA GPU Support**: Uses NVENC on systems with compatible NVIDIA GPUs
+        - **Apple Silicon**: Optimized for M1/M2/M3 Macs using VideoToolbox
+        - **Intel QuickSync**: Utilizes Intel's hardware encoding on compatible systems
+        - **CPU Fallback**: Uses optimized CPU encoding when hardware acceleration isn't available
         
         ### Key Features:
         - **Multi-language Support**: Generate videos in any language where audio and image files are available
@@ -678,8 +861,6 @@ def main():
         # Summary videos
         /output/<Language>/<Course>/<Section>/<Lecture> (summary).mp4
         ```
-        
-        This hierarchical structure ensures proper organization of content across multiple languages.
         """)
 
     # Ensure input and output directories exist without showing them
@@ -696,6 +877,18 @@ def main():
         )
         return
 
+    # Display hardware acceleration information
+    encoder, decoder = detect_hardware_acceleration()
+    
+    st.header("Hardware Acceleration")
+    
+    if encoder != 'libx264':
+        st.success(f"✅ Hardware acceleration detected: Using {encoder} for video encoding")
+        if decoder:
+            st.info(f"🔍 Using {decoder} hardware acceleration for decoding")
+    else:
+        st.info("ℹ️ No hardware acceleration detected. Using CPU encoding (libx264)")
+    
     # Video Settings
     st.header("Video Settings")
 
@@ -869,7 +1062,7 @@ def main():
 
                     if selected:
                         selected_lectures[(subject, course, section,
-                                           lecture)] = lecture_data
+                                          lecture)] = lecture_data
 
     # Generate MP4s
     st.header("Generate MP4s")
@@ -902,8 +1095,8 @@ def main():
     )
 
     if st.button("Generate MP4s",
-                 disabled=len(selected_lectures) == 0
-                 or not (generate_regular or generate_summary)):
+                disabled=len(selected_lectures) == 0
+                or not (generate_regular or generate_summary)):
         if not selected_lectures:
             st.warning("No lectures selected for MP4 generation.")
             return

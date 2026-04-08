@@ -3,7 +3,6 @@ from __future__ import annotations
 import runpy
 import sys
 from pathlib import Path
-from types import SimpleNamespace
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -70,20 +69,64 @@ def test_app_uses_categorized_navigation(monkeypatch, tmp_path: Path):
     assert fake_st.navigation_pages is not None
     assert list(fake_st.navigation_pages.keys()) == [
         "Overview",
-        "Core Workflow",
-        "Translation & Multilingual",
-        "Validation & Video",
+        "Prepare Course Files",
+        "Generate Core Assets",
+        "Validate & Render Video",
+        "Optional Translation & Multilingual",
+        "Alternative Audio Providers",
         "Maintenance & Recovery",
-        "Legacy & Alternate",
+        "Legacy & Fallback Tools",
     ]
     assert fake_st.navigation_kwargs == {"position": "sidebar", "expanded": True}
 
-    core_titles = [page.title for page in fake_st.navigation_pages["Core Workflow"]]
-    legacy_titles = [page.title for page in fake_st.navigation_pages["Legacy & Alternate"]]
+    prepare_titles = [page.title for page in fake_st.navigation_pages["Prepare Course Files"]]
+    core_asset_titles = [page.title for page in fake_st.navigation_pages["Generate Core Assets"]]
+    video_titles = [page.title for page in fake_st.navigation_pages["Validate & Render Video"]]
+    translation_titles = [page.title for page in fake_st.navigation_pages["Optional Translation & Multilingual"]]
+    alternative_audio_titles = [page.title for page in fake_st.navigation_pages["Alternative Audio Providers"]]
+    legacy_titles = [page.title for page in fake_st.navigation_pages["Legacy & Fallback Tools"]]
 
-    assert "Adjust AAA EEE" in core_titles
-    assert "Rename" in core_titles
-    assert "Count New" in [page.title for page in fake_st.navigation_pages["Validation & Video"]]
-    assert "Multilingual TTS" in [page.title for page in fake_st.navigation_pages["Translation & Multilingual"]]
-    assert "4K Image" in legacy_titles
+    assert prepare_titles == [
+        "01 Prepare AAA EEE",
+        "02 Rename Lecture Files",
+        "03 Split Text Sections",
+        "04 Clean Unwanted Files",
+        "05 Move Slide Files",
+    ]
+    assert core_asset_titles == [
+        "06 Generate 4K Images",
+        "07 Generate Audio with Kokoro",
+    ]
+    assert video_titles == [
+        "08 Validate File Counts",
+        "09 Repair MP4 Inputs",
+        "10 Render MP4 Videos",
+        "11 Verify MP4 Output",
+    ]
+    assert translation_titles == [
+        "08 Translate with Ollama",
+        "08 Translate with LM Studio",
+        "52 Create Multilingual Folder Structure",
+        "53 Convert Text to Multiple Languages",
+        "54 Generate Multilingual Audio",
+    ]
+    assert alternative_audio_titles == [
+        "55 Generate Audio with OpenAI",
+        "15 Generate Audio with Inworld",
+    ]
+    assert legacy_titles == [
+        "06 Legacy 4K Image",
+        "06 Legacy 4K Image PPTX ZIP",
+        "09 Legacy Count",
+        "10 Legacy MP4 GPU",
+        "58 Legacy Translator Lecto",
+        "60 Legacy MP4 CPU",
+    ]
+    for section, pages in fake_st.navigation_pages.items():
+        for page in pages:
+            if page.title == "Home":
+                continue
+            assert Path(page.page).name == f"{page.title}.py", (
+                f"{section} item {page.title!r} should map to the matching filename"
+            )
     assert fake_st.selected_page is not None and fake_st.selected_page.ran is True

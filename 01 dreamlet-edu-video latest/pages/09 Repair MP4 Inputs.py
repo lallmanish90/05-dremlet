@@ -25,7 +25,7 @@ import re
 import shutil
 from typing import Dict, List, Tuple
 
-# --- Start of code copied from 10_mp4_GPU.py ---
+# --- Start of code copied from 10 Legacy MP4 GPU.py ---
 
 # Define fixed input directory
 INPUT_DIR = os.path.join(os.getcwd(), "input")

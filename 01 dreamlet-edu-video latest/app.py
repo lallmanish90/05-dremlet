@@ -27,8 +27,8 @@ def increase_image_decompression_limit() -> None:
     Image.MAX_IMAGE_PIXELS = 3840 * 2160 * 50
 
 
-def page(file_name: str, title: str, icon: str = ""):
-    return st.Page(str(PAGES_DIR / file_name), title=title, icon=icon)
+def page(title: str, icon: str = ""):
+    return st.Page(str(PAGES_DIR / f"{title}.py"), title=title, icon=icon)
 
 
 def get_output_directory() -> str:
@@ -129,36 +129,36 @@ def get_recommended_next_step(context: dict) -> dict:
 
     if input_counts["aaa_files"] > 0 or input_counts["eee_files"] > 0:
         return {
-            "title": "Adjust AAA EEE",
+            "title": "01 Prepare AAA EEE",
             "reason": "Raw AAA / EEE source files were detected and should be normalized first.",
         }
     if input_counts["transcript_files"] > 0 and generated["text_section_files"] == 0:
         return {
-            "title": "Save Text",
+            "title": "03 Split Text Sections",
             "reason": "Lecture transcript files exist, but section text files have not been generated yet.",
         }
     if input_counts["pptx_files"] > 0 and generated["image_folders"] == 0:
         return {
-            "title": "4K Image Final",
+            "title": "06 Generate 4K Images",
             "reason": "Presentations were detected, but no generated image folders exist yet.",
         }
     if generated["text_section_files"] > 0 and generated["audio_folders"] == 0:
         return {
-            "title": "TTS Kokoro",
+            "title": "07 Generate Audio with Kokoro",
             "reason": "Section text files exist, but no generated audio folders were found.",
         }
     if generated["audio_folders"] > 0 and generated["image_folders"] > 0 and generated["mp4_files"] == 0:
         return {
-            "title": "MP4 Final",
+            "title": "10 Render MP4 Videos",
             "reason": "Audio and image folders exist, so the next step is rendering MP4 output.",
         }
     if generated["mp4_files"] > 0:
         return {
-            "title": "Verify MP4",
+            "title": "11 Verify MP4 Output",
             "reason": "Rendered MP4 files exist and should be verified before you move on.",
         }
     return {
-        "title": "Count New",
+        "title": "08 Validate File Counts",
         "reason": "Use validation to inspect the current filesystem state and identify the next workflow step.",
     }
 
@@ -231,42 +231,46 @@ def build_navigation():
         "Overview": [
             st.Page(render_homepage, title="Home", icon="🎓", default=True),
         ],
-        "Core Workflow": [
-            page("01_Adjust_AAA_EEE.py", "Adjust AAA EEE", "📄"),
-            page("02_Rename.py", "Rename", "✏️"),
-            page("03_Save_Text.py", "Save Text", "💾"),
-            page("04_Remove_unwanted.py", "Remove Unwanted", "🧹"),
-            page("05_Move_Slides.py", "Move Slides", "📄"),
-            page("06.py", "4K Image Final", "🖼️"),
-            page("07_TTS_Kokoro.py", "TTS Kokoro", "🔊"),
+        "Prepare Course Files": [
+            page("01 Prepare AAA EEE", "📄"),
+            page("02 Rename Lecture Files", "✏️"),
+            page("03 Split Text Sections", "💾"),
+            page("04 Clean Unwanted Files", "🧹"),
+            page("05 Move Slide Files", "📄"),
         ],
-        "Translation & Multilingual": [
-            page("08_Ollama.py", "Ollama", "🌍"),
-            page("08_Translator_LM_Studio.py", "Translator LM Studio", "🌐"),
-            page("15_inworld_TTS.py", "Inworld TTS", "🗣️"),
-            page("52_multilingual_folder_structure.py", "Multilingual Folder Structure", "🌍"),
-            page("53_Convert_Text_to_multiple_languages.py", "Convert Text to Multiple Languages", "🌐"),
-            page("54_Multilingual_TTS.py", "Multilingual TTS", "🔊"),
-            page("55_TTS_Open_AI.py", "TTS Open AI", "🗣️"),
+        "Generate Core Assets": [
+            page("06 Generate 4K Images", "🖼️"),
+            page("07 Generate Audio with Kokoro", "🔊"),
         ],
-        "Validation & Video": [
-            page("09_Count_new.py", "Count New", "🔢"),
-            page("09_Fix_for_mp4.py", "Fix for MP4", "🔧"),
-            page("10.py", "MP4 Final", "🎬"),
-            page("11_Verify_mp4.py", "Verify MP4", "📊"),
+        "Validate & Render Video": [
+            page("08 Validate File Counts", "🔢"),
+            page("09 Repair MP4 Inputs", "🔧"),
+            page("10 Render MP4 Videos", "🎬"),
+            page("11 Verify MP4 Output", "📊"),
+        ],
+        "Optional Translation & Multilingual": [
+            page("08 Translate with Ollama", "🌍"),
+            page("08 Translate with LM Studio", "🌐"),
+            page("52 Create Multilingual Folder Structure", "🌍"),
+            page("53 Convert Text to Multiple Languages", "🌐"),
+            page("54 Generate Multilingual Audio", "🔊"),
+        ],
+        "Alternative Audio Providers": [
+            page("55 Generate Audio with OpenAI", "🗣️"),
+            page("15 Generate Audio with Inworld", "🗣️"),
         ],
         "Maintenance & Recovery": [
-            page("12_Delete.py", "Delete", "🗑️"),
-            page("13_Delete_folder.py", "Delete Folder", "🗂️"),
-            page("14_restore_pptx.py", "Restore PPTX", "↩️"),
+            page("12 Delete Files", "🗑️"),
+            page("13 Delete Folders", "🗂️"),
+            page("14 Restore PPTX Files", "↩️"),
         ],
-        "Legacy & Alternate": [
-            page("06_4K_Image.py", "4K Image", "🖼️"),
-            page("06_4K_Image_pptx_zip.py", "4K Image PPTX ZIP", "🖼️"),
-            page("09_Count.py", "Count", "🔢"),
-            page("10_mp4_GPU.py", "MP4 GPU", "🎬"),
-            page("58_Translator_Lecto.py", "Translator Lecto", "🌐"),
-            page("60_mp4_CPU.py", "MP4 CPU", "🎬"),
+        "Legacy & Fallback Tools": [
+            page("06 Legacy 4K Image", "🖼️"),
+            page("06 Legacy 4K Image PPTX ZIP", "🖼️"),
+            page("09 Legacy Count", "🔢"),
+            page("10 Legacy MP4 GPU", "🎬"),
+            page("58 Legacy Translator Lecto", "🌐"),
+            page("60 Legacy MP4 CPU", "🎬"),
         ],
     }
 

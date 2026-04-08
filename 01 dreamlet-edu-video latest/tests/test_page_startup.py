@@ -6,11 +6,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PAGES = [
-    "pages/52_multilingual_folder_structure.py",
-    "pages/53_Convert_Text_to_multiple_languages.py",
-    "pages/54_Multilingual_TTS.py",
-    "pages/55_TTS_Open_AI.py",
-    "pages/60_mp4_CPU.py",
+    "pages/52 Create Multilingual Folder Structure.py",
+    "pages/53 Convert Text to Multiple Languages.py",
+    "pages/54 Generate Multilingual Audio.py",
+    "pages/55 Generate Audio with OpenAI.py",
+    "pages/60 Legacy MP4 CPU.py",
 ]
 
 

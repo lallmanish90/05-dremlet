@@ -6,9 +6,9 @@ CODING CONVENTION: NO SHARED CODE
 - Each page is completely self-contained and independent
 
 STATUS: LEGACY
-PURPOSE: Older combined PPTX and ZIP 4K image generation page.
+PURPOSE: Older 4K image generation page for PPTX-based lecture assets.
 MAIN INPUTS:
-- PPTX presentations and ZIP image archives under `input/`
+- PPTX presentation files under `input/`
 MAIN OUTPUTS:
 - 4K image folders written into lecture working directories
 REQUIRED CONFIG / ASSETS:
@@ -20,7 +20,7 @@ EXTERNAL SERVICES:
 HARDWARE ASSUMPTIONS:
 - none
 REPLACED BY:
-- `pages/06.py`
+- `pages/06 Generate 4K Images.py`
 """
 
 import streamlit as st
@@ -37,7 +37,6 @@ import tempfile
 import glob
 import shutil
 import subprocess
-import zipfile
 from PIL import Image, ImageDraw, ImageFont
 try:
     # For newer PIL versions
@@ -75,122 +74,8 @@ def find_files(directory: str, pattern: str) -> List[str]:
     return result
 
 def find_presentation_files(directory: str) -> List[str]:
-    """Find all presentation files (PPTX and ZIP) in a directory"""
-    pptx_files = find_files(directory, "*.pptx")
-    zip_files = find_files(directory, "*.zip")
-    return pptx_files + zip_files
-
-def natural_sort_key(filename: str) -> List:
-    """Generate a key for natural sorting (handles numbers correctly)"""
-    # Extract numbers and text separately for proper sorting
-    parts = re.split(r'(\d+)', filename)
-    return [int(part) if part.isdigit() else part.lower() for part in parts]
-
-def extract_numeric_prefix(filename: str) -> int:
-    """Extract numeric prefix from filename like '1_Title.png' -> 1"""
-    match = re.match(r'^(\d+)', filename)
-    if match:
-        return int(match.group(1))
-    return 999999  # Put files without numeric prefix at the end
-
-def extract_slides_from_zip(zip_file: str, output_folder: str, status_mgr=None, target_resolution=(3840, 2160)) -> Tuple[bool, List[str], int]:
-    """
-    Extract images from a ZIP file, upscale them to 4K, and save them WITHOUT logo/copyright.
-    The main processing loop will add logo and copyright later.
-    
-    Args:
-        zip_file: Path to the ZIP file
-        output_folder: Directory to save the extracted images (without logo/copyright)
-        status_mgr: Optional StatusManager to use for status updates
-        target_resolution: Target resolution for upscaling (default: 4K)
-        
-    Returns:
-        Tuple of (success, extracted_images, image_count)
-    """
-    temp_dir = tempfile.mkdtemp()
-    
-    try:
-        os.makedirs(output_folder, exist_ok=True)
-        
-        if status_mgr:
-            status_mgr.update_action(f"Extracting ZIP file: {os.path.basename(zip_file)}")
-        
-        # Extract ZIP contents
-        try:
-            with zipfile.ZipFile(zip_file, 'r') as zip_ref:
-                zip_ref.extractall(temp_dir)
-        except Exception as e:
-            error_msg = f"Error extracting ZIP file: {str(e)}"
-            if status_mgr:
-                status_mgr.error(error_msg)
-            return False, [], 0
-        
-        # Find all image files in the extracted contents
-        image_extensions = ['*.png', '*.jpg', '*.jpeg', '*.PNG', '*.JPG', '*.JPEG']
-        image_files = []
-        for ext in image_extensions:
-            image_files.extend(glob.glob(os.path.join(temp_dir, '**', ext), recursive=True))
-        
-        if not image_files:
-            error_msg = "No image files found in ZIP archive"
-            if status_mgr:
-                status_mgr.error(error_msg)
-            return False, [], 0
-        
-        # Sort images by numeric prefix to maintain slide order
-        image_files.sort(key=lambda x: extract_numeric_prefix(os.path.basename(x)))
-        
-        if status_mgr:
-            status_mgr.update_action(f"Found {len(image_files)} images in ZIP, processing...")
-        
-        # Process each image
-        extracted_images = []
-        for i, img_path in enumerate(image_files, 1):
-            try:
-                with Image.open(img_path) as img:
-                    # Check if upscaling is needed
-                    aspect_ratio = img.width / img.height
-                    
-                    if img.width >= target_resolution[0] and img.height >= target_resolution[1]:
-                        # Image is already 4K or larger, just copy it
-                        processed_img = img.copy()
-                    else:
-                        # Upscale to 4K while maintaining aspect ratio
-                        if aspect_ratio > target_resolution[0] / target_resolution[1]:
-                            new_width = target_resolution[0]
-                            new_height = int(target_resolution[0] / aspect_ratio)
-                        else:
-                            new_height = target_resolution[1]
-                            new_width = int(target_resolution[1] * aspect_ratio)
-                        
-                        processed_img = img.resize((new_width, new_height), LANCZOS)
-                    
-                    # Save with sequential naming
-                    output_path = os.path.join(output_folder, f"{i:02d}.png")
-                    processed_img.save(output_path, "PNG", optimize=True)
-                    extracted_images.append(output_path)
-                    
-            except Exception as e:
-                if status_mgr:
-                    status_mgr.warning(f"Error processing image {os.path.basename(img_path)}: {str(e)}")
-                continue
-        
-        image_count = len(extracted_images)
-        
-        if image_count == 0:
-            error_msg = "Failed to process any images from ZIP"
-            if status_mgr:
-                status_mgr.error(error_msg)
-            return False, [], 0
-        
-        if status_mgr:
-            status_mgr.update_action(f"Successfully extracted {image_count} images from ZIP")
-        
-        return True, extracted_images, image_count
-        
-    finally:
-        # Clean up temporary directory
-        shutil.rmtree(temp_dir, ignore_errors=True)
+    """Find all presentation files in a directory"""
+    return find_files(directory, "*.pptx")
 
 def extract_course_lecture_section(file_path: str) -> Tuple[Optional[str], Optional[str], Optional[str]]:
     """Extract course, lecture, and section information from a file path"""
@@ -640,7 +525,7 @@ def _try_method(
 # Increase the Pillow decompression bomb limit for large images
 increase_image_decompression_limit()
 
-st.set_page_config(page_title="06 4K Image (PPTX & ZIP) - Dreamlet", page_icon="🖼️")
+st.set_page_config(page_title="06 4K Image - Dreamlet", page_icon="🖼️")
 
 # Constants for image processing
 LOGO_PATH = 'config/logo.png'
@@ -888,15 +773,15 @@ class StatusManager:
 def process_presentations(input_dir: str, progress_bar, status_text, create_without_logo_folder=False, 
                  conversion_method=None, enable_auto_fallback=True, current_action_text=None) -> List[Dict]:
     """
-    Process all PPTX and ZIP files in the input directory structure
+    Process all PPTX files in the input directory structure
     
     Args:
         input_dir: Input directory path
         progress_bar: Streamlit progress bar object
         status_text: Streamlit text area for status updates
         create_without_logo_folder: Whether to create without_logo_png folder for original images
-        conversion_method: Method to use for PPTX conversion (libreoffice, python-pptx, pdf2image) - not used for ZIP files
-        enable_auto_fallback: Whether to try other methods if the selected one fails (PPTX only)
+        conversion_method: Method to use for conversion (libreoffice, python-pptx, pdf2image)
+        enable_auto_fallback: Whether to try other methods if the selected one fails
         current_action_text: Streamlit text element for displaying current action
         
     Returns:
@@ -937,10 +822,6 @@ def process_presentations(input_dir: str, progress_bar, status_text, create_with
         }
         
         try:
-            # Determine file type first
-            file_extension = os.path.splitext(pptx_file)[1].lower()
-            is_zip_file = file_extension == '.zip'
-            
             # Get the directory containing the presentation
             pptx_dir = os.path.dirname(pptx_file)
             
@@ -972,15 +853,9 @@ def process_presentations(input_dir: str, progress_bar, status_text, create_with
                 all_pptx_folder = os.path.join(pptx_dir, 'all_pptx')
                 os.makedirs(all_pptx_folder, exist_ok=True)
                 
-                # Create folder with same name as file for images
-                file_name = os.path.splitext(os.path.basename(pptx_file))[0]
-                
-                # For ZIP files with numeric names, add "Lecture" prefix to match PPTX structure
-                if is_zip_file and re.match(r'^\d+$', file_name):
-                    lecture_folder = os.path.join(pptx_dir, f"Lecture {file_name.zfill(2)}")
-                else:
-                    lecture_folder = os.path.join(pptx_dir, file_name)
-                    
+                # Create folder with same name as PPTX file for images
+                pptx_name = os.path.splitext(os.path.basename(pptx_file))[0]
+                lecture_folder = os.path.join(pptx_dir, pptx_name)
                 os.makedirs(lecture_folder, exist_ok=True)
                 
                 # Create "English image" folder inside the lecture folder
@@ -1008,7 +883,7 @@ def process_presentations(input_dir: str, progress_bar, status_text, create_with
                 results.append(result)
                 continue
                 
-            # Extract and upscale images from the presentation or ZIP file
+            # Extract and upscale images from the presentation
             import tempfile
             temp_dir = None
             
@@ -1017,24 +892,13 @@ def process_presentations(input_dir: str, progress_bar, status_text, create_with
                 if create_without_logo_folder:
                     # Ensure the folder exists
                     os.makedirs(without_logo_folder, exist_ok=True)
-                    
-                    if is_zip_file:
-                        # Extract from ZIP file
-                        success, extracted_images, slide_count = extract_slides_from_zip(
-                            pptx_file,
-                            without_logo_folder,
-                            status_mgr=status_mgr,
-                            target_resolution=TARGET_RESOLUTION
-                        )
-                    else:
-                        # Extract from PPTX file
-                        success, extracted_images, slide_count = extract_and_upscale_images(
-                            pptx_file, 
-                            without_logo_folder,
-                            conversion_method=conversion_method,
-                            enable_auto_fallback=enable_auto_fallback,
-                            status_mgr=status_mgr
-                        )
+                    success, extracted_images, slide_count = extract_and_upscale_images(
+                        pptx_file, 
+                        without_logo_folder,
+                        conversion_method=conversion_method,
+                        enable_auto_fallback=enable_auto_fallback,
+                        status_mgr=status_mgr
+                    )
                     
                     # Process each extracted image (add logo and copyright)
                     processed_img_count = 0
@@ -1050,24 +914,13 @@ def process_presentations(input_dir: str, progress_bar, status_text, create_with
                 else:
                     # Use a temporary directory that we manage explicitly
                     temp_dir = tempfile.mkdtemp()
-                    
-                    if is_zip_file:
-                        # Extract from ZIP file
-                        success, extracted_images, slide_count = extract_slides_from_zip(
-                            pptx_file,
-                            temp_dir,
-                            status_mgr=status_mgr,
-                            target_resolution=TARGET_RESOLUTION
-                        )
-                    else:
-                        # Extract from PPTX file
-                        success, extracted_images, slide_count = extract_and_upscale_images(
-                            pptx_file, 
-                            temp_dir,
-                            conversion_method=conversion_method,
-                            enable_auto_fallback=enable_auto_fallback,
-                            status_mgr=status_mgr
-                        )
+                    success, extracted_images, slide_count = extract_and_upscale_images(
+                        pptx_file, 
+                        temp_dir,
+                        conversion_method=conversion_method,
+                        enable_auto_fallback=enable_auto_fallback,
+                        status_mgr=status_mgr
+                    )
                     
                     # Process each extracted image (add logo and copyright)
                     processed_img_count = 0
@@ -1115,8 +968,8 @@ def process_presentations(input_dir: str, progress_bar, status_text, create_with
     return results
 
 def main():
-    st.title("4K Image (PPTX & ZIP)")
-    st.write("Generate high-resolution 4K images from presentation slides (PPTX) or ZIP archives containing images.")
+    st.title("4K Image")
+    st.write("Generate high-resolution 4K images from presentation slides.")
     
     input_dir = get_input_directory()
     
@@ -1134,9 +987,7 @@ def main():
     
     # Display number of presentations found
     total_presentations = len(all_presentations)
-    pptx_count = sum(1 for f in all_presentations if f.lower().endswith('.pptx'))
-    zip_count = sum(1 for f in all_presentations if f.lower().endswith('.zip'))
-    st.info(f"Found {total_presentations} files in input directory: {pptx_count} PPTX, {zip_count} ZIP")
+    st.info(f"Found {total_presentations} presentation files in input directory.")
     
     # Options section
     st.header("Options")
@@ -1145,10 +996,9 @@ def main():
     create_without_logo_folder = st.checkbox("Create 'without_logo_png' folder", value=False, 
                                           help="If checked, a folder containing original images without logo and copyright will be created")
     
-    # Conversion method selection (only for PPTX files)
-    st.subheader("Conversion Method (PPTX only)")
-    st.write("Select the method to use for extracting slides from PPTX presentations:")
-    st.caption("Note: ZIP files are processed directly and don't use these conversion methods")
+    # Conversion method selection
+    st.subheader("Conversion Method")
+    st.write("Select the method to use for extracting slides from presentations:")
     
     # Create a dropdown for conversion method selection
     conversion_methods = list(CONVERSION_METHODS.items())
@@ -1157,7 +1007,7 @@ def main():
         options=[method.value for method, _ in conversion_methods],
         format_func=lambda x: CONVERSION_METHODS[x],
         index=0,
-        help="Choose the method used to extract slides from PPTX presentations (not applicable to ZIP files)"
+        help="Choose the method used to extract slides from presentations"
     )
     
     # Option for automatic fallback
@@ -1167,24 +1017,10 @@ def main():
         help="If checked, automatically try other methods if the selected method fails"
     )
     
-    # Information about conversion methods and file types
-    with st.expander("About File Types and Conversion Methods"):
+    # Information about conversion methods
+    with st.expander("About Conversion Methods"):
         st.markdown("""
-        ### Supported File Types
-        
-        #### PPTX Files
-        - PowerPoint presentation files
-        - Slides are extracted and converted to images
-        - Multiple conversion methods available (see below)
-        
-        #### ZIP Files
-        - ZIP archives containing image files (PNG, JPG, JPEG)
-        - Images are extracted directly from the ZIP
-        - Automatically sorted by numeric prefix (e.g., 1_Title.png, 2_Content.png)
-        - Upscaled to 4K if needed
-        - No conversion method selection needed
-        
-        ### Conversion Methods (PPTX only)
+        ### Conversion Methods
         
         #### LibreOffice + pdftoppm (best quality)
         - Uses LibreOffice to convert PPTX to PDF
@@ -1205,7 +1041,7 @@ def main():
         - Slightly lower quality than pdftoppm method
         """)
         
-        st.info("💡 Tip: If you encounter issues with PPTX conversion, try another method or enable automatic fallback.")
+        st.info("💡 Tip: If you encounter issues with one method, try another or enable automatic fallback.")
     
     # Process presentations
     st.header("Extract Presentations")

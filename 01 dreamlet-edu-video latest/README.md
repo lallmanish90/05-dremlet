@@ -44,38 +44,38 @@ The practical workflow in the current app is:
 ## Important Pages
 
 The core active-looking pages are:
-- `pages/01_Adjust_AAA_EEE.py`
-- `pages/02_Rename.py`
-- `pages/03_Save_Text.py`
-- `pages/04_Remove_unwanted.py`
-- `pages/05_Move_Slides.py`
-- `pages/06.py`
-- `pages/07_TTS_Kokoro.py`
-- `pages/08_Ollama.py`
-- `pages/08_Translator_LM_Studio.py`
-- `pages/09_Count_new.py`
-- `pages/09_Fix_for_mp4.py`
-- `pages/10.py`
-- `pages/11_Verify_mp4.py`
+- `pages/01 Prepare AAA EEE.py`
+- `pages/02 Rename Lecture Files.py`
+- `pages/03 Split Text Sections.py`
+- `pages/04 Clean Unwanted Files.py`
+- `pages/05 Move Slide Files.py`
+- `pages/06 Generate 4K Images.py`
+- `pages/07 Generate Audio with Kokoro.py`
+- `pages/08 Translate with Ollama.py`
+- `pages/08 Translate with LM Studio.py`
+- `pages/08 Validate File Counts.py`
+- `pages/09 Repair MP4 Inputs.py`
+- `pages/10 Render MP4 Videos.py`
+- `pages/11 Verify MP4 Output.py`
 - `pages/11_Workflow_Manager.py`
-- `pages/12_Delete.py`
-- `pages/13_Delete_folder.py`
-- `pages/14_restore_pptx.py`
-- `pages/15_inworld_TTS.py`
+- `pages/12 Delete Files.py`
+- `pages/13 Delete Folders.py`
+- `pages/14 Restore PPTX Files.py`
+- `pages/15 Generate Audio with Inworld.py`
 
 Additional multilingual pages:
-- `pages/52_multilingual_folder_structure.py`
-- `pages/53_Convert_Text_to_multiple_languages.py`
-- `pages/54_Multilingual_TTS.py`
-- `pages/55_TTS_Open_AI.py`
+- `pages/52 Create Multilingual Folder Structure.py`
+- `pages/53 Convert Text to Multiple Languages.py`
+- `pages/54 Generate Multilingual Audio.py`
+- `pages/55 Generate Audio with OpenAI.py`
 
 Legacy / alternate / backup pages are also present:
 - `pages/50_Legacy_Files_Header.py`
 - `pages/56_TTS_Kokoro_old.py`
 - `pages/57_TTS_Kokoro_GPU_old.py`
-- `pages/58_Translator_Lecto.py`
+- `pages/58 Legacy Translator Lecto.py`
 - `pages/59_count_old.py`
-- `pages/60_mp4_CPU.py`
+- `pages/60 Legacy MP4 CPU.py`
 - `pages/61_Adjust_Transcript_Only.py`
 - `pages/99_01_Rename_BACKUP.py`
 - `pages/99_02_Adjust_AAA_EEE_BACKUP.py`
@@ -84,8 +84,8 @@ Legacy / alternate / backup pages are also present:
 ## Newer Consolidated Pages
 
 Two important newer pages exist alongside older variants:
-- `pages/06.py`
-- `pages/10.py`
+- `pages/06 Generate 4K Images.py`
+- `pages/10 Render MP4 Videos.py`
 
 These appear to be newer consolidated "final" versions of the 4K image and MP4 GPU flows, while older named variants still remain in the repo.
 

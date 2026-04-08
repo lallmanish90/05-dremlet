@@ -19,7 +19,7 @@ HARDWARE ASSUMPTIONS:
 - none
 
 Improved File Verification System
-Replaces the complex 09_Count.py with a cleaner, more maintainable architecture
+Replaces the complex 09 Legacy Count.py with a cleaner, more maintainable architecture
 """
 
 import streamlit as st

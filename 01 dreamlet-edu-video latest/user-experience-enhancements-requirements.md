@@ -12,19 +12,19 @@ Improve the usability of the existing educational video workflow without changin
 ## Current Scope
 
 These requirements are meant for the current page structure, especially:
-- `pages/01_Adjust_AAA_EEE.py`
-- `pages/02_Rename.py`
-- `pages/03_Save_Text.py`
-- `pages/04_Remove_unwanted.py`
-- `pages/05_Move_Slides.py`
-- `pages/06.py`
-- `pages/07_TTS_Kokoro.py`
-- `pages/08_Ollama.py`
-- `pages/08_Translator_LM_Studio.py`
-- `pages/09_Count_new.py`
-- `pages/09_Fix_for_mp4.py`
-- `pages/10.py`
-- `pages/11_Verify_mp4.py`
+- `pages/01 Prepare AAA EEE.py`
+- `pages/02 Rename Lecture Files.py`
+- `pages/03 Split Text Sections.py`
+- `pages/04 Clean Unwanted Files.py`
+- `pages/05 Move Slide Files.py`
+- `pages/06 Generate 4K Images.py`
+- `pages/07 Generate Audio with Kokoro.py`
+- `pages/08 Translate with Ollama.py`
+- `pages/08 Translate with LM Studio.py`
+- `pages/08 Validate File Counts.py`
+- `pages/09 Repair MP4 Inputs.py`
+- `pages/10 Render MP4 Videos.py`
+- `pages/11 Verify MP4 Output.py`
 - `pages/11_Workflow_Manager.py`
 
 ## Requirements Worth Implementing

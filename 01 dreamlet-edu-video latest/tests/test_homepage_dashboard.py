@@ -136,7 +136,7 @@ def test_homepage_dashboard_logic_and_sections(monkeypatch, tmp_path: Path):
     assert context["generated"]["mp4_files"] == 1
 
     next_step = globals_dict["get_recommended_next_step"](context)
-    assert next_step["title"] == "Adjust AAA EEE"
+    assert next_step["title"] == "01 Prepare AAA EEE"
 
     fake_st.calls.clear()
     globals_dict["render_homepage"]()
