@@ -19,7 +19,7 @@ EXTERNAL SERVICES:
 HARDWARE ASSUMPTIONS:
 - CPU-only rendering path
 REPLACED BY:
-- `pages/10.py`
+- `pages/10 Render MP4 Videos.py`
 """
 
 from dreamlet_cli.compat import st

@@ -18,7 +18,7 @@ EXTERNAL SERVICES:
 HARDWARE ASSUMPTIONS:
 - none
 REPLACED BY:
-- `pages/03_Save_Text.py`
+- `pages/03 Split Text Sections.py`
 """
 
 from dreamlet_cli.compat import st

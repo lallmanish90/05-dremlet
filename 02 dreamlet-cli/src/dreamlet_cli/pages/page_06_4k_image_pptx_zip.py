@@ -20,7 +20,7 @@ EXTERNAL SERVICES:
 HARDWARE ASSUMPTIONS:
 - none
 REPLACED BY:
-- `pages/06.py`
+- `pages/06 Generate 4K Images.py`
 """
 
 from dreamlet_cli.compat import st

@@ -18,7 +18,7 @@ EXTERNAL SERVICES:
 HARDWARE ASSUMPTIONS:
 - none
 REPLACED BY:
-- `pages/02_Rename.py`
+- `pages/02 Rename Lecture Files.py`
 """
 
 from dreamlet_cli.compat import st

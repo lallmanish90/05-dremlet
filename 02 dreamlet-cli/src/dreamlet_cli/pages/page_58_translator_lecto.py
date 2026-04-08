@@ -19,8 +19,8 @@ EXTERNAL SERVICES:
 HARDWARE ASSUMPTIONS:
 - none
 REPLACED BY:
-- `pages/08_Ollama.py`
-- `pages/08_Translator_LM_Studio.py`
+- `pages/08 Translate with Ollama.py`
+- `pages/08 Translate with LM Studio.py`
 """
 
 from dreamlet_cli.compat import st

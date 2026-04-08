@@ -18,7 +18,7 @@ EXTERNAL SERVICES:
 HARDWARE ASSUMPTIONS:
 - none
 REPLACED BY:
-- `pages/09_Count_new.py`
+- `pages/08 Validate File Counts.py`
 """
 
 from dreamlet_cli.compat import st

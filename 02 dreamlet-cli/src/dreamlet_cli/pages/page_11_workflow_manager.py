@@ -314,7 +314,7 @@ def execute_workflow_step(step_id: str, project_path: str, step_options: Dict = 
         return False, f"Error executing step {step_id}: {str(e)}", {}
 
 # ============================================================================
-# STEP 01: AAA/EEE ADJUSTMENT FUNCTIONS (copied from 01_Adjust_AAA_EEE.py)
+# STEP 01: AAA/EEE ADJUSTMENT FUNCTIONS (copied from 01 Prepare AAA EEE.py)
 # ============================================================================
 
 def extract_lecture_number(filename: str) -> Optional[str]:
@@ -651,7 +651,7 @@ def execute_step_01_adjust_aaa_eee(project_path: str, create_artifact_c: bool = 
         return False, f"Error in step 01: {str(e)}", {}
 
 # ============================================================================
-# STEP 02: RENAME FUNCTIONS (copied from 02_Rename.py)
+# STEP 02: RENAME FUNCTIONS (copied from 02 Rename Lecture Files.py)
 # ============================================================================
 
 def find_files_by_pattern(directory: str, pattern: str) -> List[str]:
@@ -781,7 +781,7 @@ def execute_step_02_rename(project_path: str) -> Tuple[bool, str, Dict]:
         return False, f"Error in step 02: {str(e)}", {}
 
 # ============================================================================
-# STEP 03: SAVE TEXT FUNCTIONS (copied from 03_Save_Text.py)
+# STEP 03: SAVE TEXT FUNCTIONS (copied from 03 Split Text Sections.py)
 # ============================================================================
 
 def extract_slide_blocks_from_content(content: str) -> List[str]:

@@ -18,7 +18,7 @@ EXTERNAL SERVICES:
 HARDWARE ASSUMPTIONS:
 - local machine dependent
 REPLACED BY:
-- `pages/07_TTS_Kokoro.py`
+- `pages/07 Generate Audio with Kokoro.py`
 """
 
 from dreamlet_cli.compat import st

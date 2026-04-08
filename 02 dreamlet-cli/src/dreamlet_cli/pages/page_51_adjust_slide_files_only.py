@@ -18,7 +18,7 @@ EXTERNAL SERVICES:
 HARDWARE ASSUMPTIONS:
 - none
 REPLACED BY:
-- `pages/01_Adjust_AAA_EEE.py`
+- `pages/01 Prepare AAA EEE.py`
 """
 
 from dreamlet_cli.compat import st
