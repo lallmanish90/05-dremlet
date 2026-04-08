@@ -6,6 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PAGES = [
+    "pages/06 Generate 4K Images.py",
     "pages/52 Create Multilingual Folder Structure.py",
     "pages/53 Convert Text to Multiple Languages.py",
     "pages/54 Generate Multilingual Audio.py",
