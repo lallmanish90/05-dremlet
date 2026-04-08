@@ -36,6 +36,7 @@ import numpy as np
 import io
 import enum
 import fnmatch
+import importlib.util
 import platform
 import tempfile
 import glob
@@ -71,15 +72,35 @@ try:
 except ImportError:
     print("❌ CUDA framework not available - install with: pip install cupy-cuda12x")
 
+FALLBACK_PROFILE = {
+    'name': 'Generic machine',
+    'notes': 'No configured profile matched the current computer.',
+    'match_rules': {},
+    'optimization_settings': {
+        'max_threads': 4,
+        'batch_size': 2,
+        'memory_limit_gb': 8,
+        'use_gpu_acceleration': False,
+        'preferred_image_processing': 'cpu',
+        'default_conversion_method': 'libreoffice',
+    },
+}
+
+VALID_CONVERSION_METHODS = {'libreoffice', 'python-pptx', 'pdf2image'}
+
 MACHINE_PROFILES = {
-    'macbook_m3_pro': {
+    'macbook_pro_m3_pro_18gb': {
         'name': 'MacBook Pro M3 Pro (18GB)',
-        'platform': 'darwin',
-        'cpu': 'Apple M3 Pro',
-        'ram_gb': 18,
-        'gpu': {
-            'type': 'apple_silicon',
-            'runtime': 'cpu_optimized',
+        'notes': 'Implemented and verified locally',
+        'match_rules': {
+            'platform': 'darwin',
+            'architecture': ['arm64'],
+            'cpu_contains': None,
+            'ram_gb_min': 16,
+            'ram_gb_max': 20,
+            'gpu_type': 'apple_silicon',
+            'gpu_name_contains': None,
+            'hostname_contains': None,
         },
         'optimization_settings': {
             'max_threads': 8,
@@ -87,18 +108,21 @@ MACHINE_PROFILES = {
             'memory_limit_gb': 14,
             'use_gpu_acceleration': False,
             'preferred_image_processing': 'cpu',
+            'default_conversion_method': 'libreoffice',
         },
     },
-    'windows_i5_rtx3050': {
+    'windows_i5_12450h_rtx3050_16gb': {
         'name': 'Acer Windows laptop (i5-12450H + RTX 3050)',
-        'platform': 'windows',
-        'cpu': 'Intel Core i5-12450H',
-        'ram_gb': 16,
-        'gpu': {
-            'type': 'nvidia',
-            'model': 'RTX 3050 Laptop GPU',
-            'runtime': 'cuda',
-            'vram_gb': 4,
+        'notes': 'Machine-aware Windows/CUDA path is implemented, but it still needs a real-machine run',
+        'match_rules': {
+            'platform': 'windows',
+            'architecture': ['amd64', 'x86_64'],
+            'cpu_contains': 'i5-12450h',
+            'ram_gb_min': 14,
+            'ram_gb_max': 18,
+            'gpu_type': 'nvidia',
+            'gpu_name_contains': 'rtx 3050',
+            'hostname_contains': None,
         },
         'optimization_settings': {
             'max_threads': 6,
@@ -106,199 +130,298 @@ MACHINE_PROFILES = {
             'memory_limit_gb': 12,
             'use_gpu_acceleration': True,
             'preferred_image_processing': 'cuda',
+            'default_conversion_method': 'libreoffice',
         },
     },
 }
 
-FALLBACK_PROFILE = {
-    'name': 'Generic machine',
-    'platform': 'generic',
-    'cpu': 'Unknown',
-    'ram_gb': 8,
-    'gpu': {
-        'type': 'unknown',
-        'runtime': 'cpu',
-    },
-    'optimization_settings': {
-        'max_threads': 4,
-        'batch_size': 2,
-        'memory_limit_gb': 8,
-        'use_gpu_acceleration': False,
-        'preferred_image_processing': 'cpu',
-    },
-}
+
+def detect_apple_silicon_capability() -> bool:
+    if platform.system() != 'Darwin':
+        return False
+
+    try:
+        result = subprocess.run(
+            ['sysctl', '-n', 'hw.optional.arm64'],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        return result.returncode == 0 and result.stdout.strip() == '1'
+    except Exception:
+        return False
+
+
+def collect_system_info() -> Dict:
+    system_info = {
+        'hostname': platform.node().lower(),
+        'platform': platform.system().lower(),
+        'architecture': platform.machine().lower(),
+        'cpu': (platform.processor() or '').lower(),
+        'memory_gb': round(psutil.virtual_memory().total / (1024**3)),
+        'cpu_count': psutil.cpu_count() or 1,
+    }
+    if detect_apple_silicon_capability():
+        system_info['architecture'] = 'arm64'
+        if not system_info['cpu'] or system_info['cpu'] == 'i386':
+            system_info['cpu'] = 'apple silicon'
+    system_info.update(detect_gpu_info())
+    return system_info
+
+
+def detect_gpu_info() -> Dict:
+    gpu_info = {'gpu_detected': False}
+
+    try:
+        result = subprocess.run(
+            ['nvidia-smi', '--query-gpu=name', '--format=csv,noheader'],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if result.returncode == 0:
+            gpu_name = result.stdout.strip().splitlines()[0] if result.stdout.strip() else 'NVIDIA GPU'
+            gpu_info.update({
+                'gpu_detected': True,
+                'gpu_type': 'nvidia',
+                'gpu_name': gpu_name,
+            })
+    except Exception:
+        pass
+
+    if platform.system() == 'Darwin':
+        try:
+            result = subprocess.run(['uname', '-m'], capture_output=True, text=True)
+            arch = result.stdout.strip()
+            print(f"🔍 macOS Architecture: {arch}")
+
+            if arch == 'arm64' or detect_apple_silicon_capability():
+                gpu_info.update({
+                    'gpu_detected': True,
+                    'gpu_type': 'apple_silicon',
+                    'gpu_name': 'Apple Silicon GPU',
+                    'unified_memory': True,
+                })
+                print("✅ Apple Silicon GPU detected")
+            else:
+                print("❌ Intel Mac detected (no Apple Silicon GPU)")
+        except Exception as exc:
+            print(f"❌ Error detecting Apple Silicon: {exc}")
+
+    return gpu_info
+
+
+def derive_optimization_settings(profile: Dict, system_info: Dict) -> Dict:
+    settings = dict(profile.get('optimization_settings', {}))
+    cpu_count = max(1, int(system_info.get('cpu_count') or settings.get('max_threads', 4)))
+    memory_gb = max(4, int(system_info.get('memory_gb') or settings.get('memory_limit_gb', 8)))
+
+    settings['max_threads'] = max(1, min(int(settings.get('max_threads', 4)), max(1, cpu_count - 1)))
+    settings['memory_limit_gb'] = max(4, min(int(settings.get('memory_limit_gb', 8)), max(4, memory_gb - 2)))
+    settings['batch_size'] = max(1, min(int(settings.get('batch_size', 2)), max(1, settings['memory_limit_gb'] // 2)))
+
+    preferred = settings.get('preferred_image_processing', 'cpu')
+    if preferred not in {'cpu', 'cuda'}:
+        preferred = 'cpu'
+    if preferred == 'cuda' and not GPU_FRAMEWORKS['cuda']:
+        settings['use_gpu_acceleration'] = False
+        preferred = 'cpu'
+    settings['preferred_image_processing'] = preferred
+
+    default_method = settings.get('default_conversion_method', 'libreoffice')
+    if default_method not in VALID_CONVERSION_METHODS:
+        default_method = 'libreoffice'
+    settings['default_conversion_method'] = default_method
+    settings['use_gpu_acceleration'] = bool(settings.get('use_gpu_acceleration', False) and preferred == 'cuda')
+    return settings
+
+
+def build_machine_config(
+    machine_id: str,
+    profile: Dict,
+    system_info: Dict,
+    match_source: str,
+    match_reasons: List[str],
+) -> Dict:
+    return {
+        'name': profile.get('name', machine_id),
+        'notes': profile.get('notes', ''),
+        'optimization_settings': derive_optimization_settings(profile, system_info),
+        'detected_info': system_info,
+        'machine_id': machine_id,
+        'match_source': match_source,
+        'match_reasons': match_reasons,
+    }
+
+
+def build_fallback_config(system_info: Dict, match_source: str = 'fallback', match_reasons: Optional[List[str]] = None) -> Dict:
+    return build_machine_config(
+        'generic_fallback',
+        FALLBACK_PROFILE,
+        system_info,
+        match_source,
+        match_reasons or ['No configured profile matched the current machine'],
+    )
+
+
+def evaluate_profile_match(profile: Dict, system_info: Dict) -> Optional[Tuple[int, List[str]]]:
+    rules = profile.get('match_rules', {})
+    reasons: List[str] = []
+    score = 0
+
+    platform_rule = rules.get('platform')
+    if platform_rule:
+        if system_info.get('platform') != platform_rule:
+            return None
+        reasons.append(f"platform={platform_rule}")
+        score += 20
+
+    architecture_rule = rules.get('architecture') or []
+    if architecture_rule:
+        if system_info.get('architecture') not in architecture_rule:
+            return None
+        reasons.append(f"architecture={system_info.get('architecture')}")
+        score += 15
+
+    cpu_rule = rules.get('cpu_contains')
+    if cpu_rule:
+        cpu_info = system_info.get('cpu', '')
+        if cpu_rule not in cpu_info:
+            return None
+        reasons.append(f"cpu contains {cpu_rule}")
+        score += 10
+
+    ram_gb = int(system_info.get('memory_gb') or 0)
+    ram_min = rules.get('ram_gb_min')
+    ram_max = rules.get('ram_gb_max')
+    if ram_min is not None and ram_gb < ram_min:
+        return None
+    if ram_max is not None and ram_gb > ram_max:
+        return None
+    if ram_min is not None or ram_max is not None:
+        reasons.append(f"ram={ram_gb}GB")
+        score += 10
+
+    gpu_type_rule = rules.get('gpu_type')
+    if gpu_type_rule:
+        if system_info.get('gpu_type') != gpu_type_rule:
+            return None
+        reasons.append(f"gpu_type={gpu_type_rule}")
+        score += 20
+
+    gpu_name_rule = rules.get('gpu_name_contains')
+    if gpu_name_rule:
+        gpu_name = (system_info.get('gpu_name') or '').lower()
+        if gpu_name_rule not in gpu_name:
+            return None
+        reasons.append(f"gpu name contains {gpu_name_rule}")
+        score += 25
+
+    hostname_rule = rules.get('hostname_contains')
+    if hostname_rule:
+        hostname = (system_info.get('hostname') or '').lower()
+        if hostname_rule not in hostname:
+            return None
+        reasons.append(f"hostname contains {hostname_rule}")
+        score += 100
+
+    return score, reasons
+
+
+def select_machine_profile(
+    system_info: Dict,
+    profiles: Dict[str, Dict],
+    override_profile_id: Optional[str] = None,
+) -> Dict:
+    if override_profile_id:
+        if override_profile_id == 'generic_fallback':
+            return build_fallback_config(system_info, 'manual', ['Manual override selected'])
+        if override_profile_id in profiles:
+            return build_machine_config(
+                override_profile_id,
+                profiles[override_profile_id],
+                system_info,
+                'manual',
+                ['Manual override selected'],
+            )
+        return build_fallback_config(system_info, 'manual', [f"Unknown manual override: {override_profile_id}"])
+
+    matches: List[Tuple[int, str, List[str]]] = []
+    for machine_id, profile in profiles.items():
+        result = evaluate_profile_match(profile, system_info)
+        if result is not None:
+            score, reasons = result
+            matches.append((score, machine_id, reasons))
+
+    if matches:
+        matches.sort(key=lambda item: item[0], reverse=True)
+        _, machine_id, reasons = matches[0]
+        return build_machine_config(machine_id, profiles[machine_id], system_info, 'auto', reasons)
+
+    return build_fallback_config(system_info)
+
 
 class MachineDetector:
     """Detect machine configuration and optimize settings accordingly"""
-    
-    def __init__(self):
+
+    def __init__(self, override_profile_id: Optional[str] = None):
+        self.override_profile_id = override_profile_id
+        self.profiles = MACHINE_PROFILES
         self.machine_config = self.detect_machine()
-        
+
     def detect_machine(self) -> Dict:
-        """Detect current machine and return optimized configuration"""
-        system_info = {
-            'platform': platform.system().lower(),
-            'architecture': platform.machine().lower(),
-            'cpu': platform.processor().lower(),
-            'memory_gb': round(psutil.virtual_memory().total / (1024**3)),
-            'cpu_count': psutil.cpu_count()
-        }
-        
-        # Try to detect GPU
-        gpu_info = self._detect_gpu()
-        system_info.update(gpu_info)
-        
-        print(f"🔍 Detection Debug:")
+        system_info = collect_system_info()
+
+        print("🔍 Detection Debug:")
+        print(f"  Hostname: {system_info.get('hostname', 'unknown')}")
         print(f"  Platform: {system_info['platform']}")
         print(f"  Architecture: {system_info['architecture']}")
         print(f"  CPU: {system_info['cpu']}")
         print(f"  Memory: {system_info['memory_gb']} GB")
         print(f"  GPU Detected: {system_info.get('gpu_detected', False)}")
         print(f"  GPU Type: {system_info.get('gpu_type', 'None')}")
-        
-        print(f"🔍 Checking M3 Pro criteria:")
-        print(f"  Platform == 'darwin': {system_info['platform'] == 'darwin'}")
-        print(f"  Architecture == 'arm64': {system_info['architecture'] == 'arm64'}")
-        print(f"  Memory in range 16-20: {16 <= system_info['memory_gb'] <= 20}")
-        print(f"  Apple Silicon GPU detected: {system_info.get('gpu_detected', False) and system_info.get('gpu_type') == 'apple_silicon'}")
-        
-        if (system_info['platform'] == 'darwin' and 
-            system_info['architecture'] == 'arm64' and
-            16 <= system_info['memory_gb'] <= 20 and
-            system_info.get('gpu_detected', False) and 
-            system_info.get('gpu_type') == 'apple_silicon'):
-            print("✅ Matched M3 Pro configuration!")
-            return self._build_machine_config('macbook_m3_pro', system_info)
-        
-        print(f"🔍 Checking Windows criteria:")
-        print(f"  Platform == 'windows': {system_info['platform'] == 'windows'}")
-        print(f"  Memory >= 14: {system_info['memory_gb'] >= 14}")
-        print(f"  GPU detected: {system_info.get('gpu_detected', False)}")
-        
-        if (system_info['platform'] == 'windows' and 
-              system_info['memory_gb'] >= 14 and 
-              system_info.get('gpu_type') == 'nvidia'):
-            print("✅ Matched Windows RTX 3050 configuration!")
-            return self._build_machine_config('windows_i5_rtx3050', system_info)
-        
-        print("❌ No specific machine matched, using fallback")
-        return self._build_fallback_config(system_info)
 
-    def _build_machine_config(self, machine_id: str, system_info: Dict) -> Dict:
-        profile = MACHINE_PROFILES[machine_id]
-        machine_config = {
-            'name': profile['name'],
-            'platform': profile['platform'],
-            'cpu': profile['cpu'],
-            'ram_gb': profile['ram_gb'],
-            'gpu': dict(profile['gpu']),
-            'optimization_settings': dict(profile['optimization_settings']),
-            'detected_info': system_info,
-            'machine_id': machine_id,
-        }
-        return machine_config
+        selected_profile = select_machine_profile(system_info, self.profiles, self.override_profile_id)
+        print(f"✅ Selected machine profile: {selected_profile['machine_id']} ({selected_profile['match_source']})")
+        return selected_profile
 
-    def _build_fallback_config(self, system_info: Dict) -> Dict:
-        return {
-            'name': FALLBACK_PROFILE['name'],
-            'platform': FALLBACK_PROFILE['platform'],
-            'cpu': FALLBACK_PROFILE['cpu'],
-            'ram_gb': FALLBACK_PROFILE['ram_gb'],
-            'gpu': dict(FALLBACK_PROFILE['gpu']),
-            'optimization_settings': dict(FALLBACK_PROFILE['optimization_settings']),
-            'detected_info': system_info,
-            'machine_id': 'unknown',
-        }
-    
-    def _detect_gpu(self) -> Dict:
-        """Detect GPU information"""
-        gpu_info = {'gpu_detected': False}
-        
-        try:
-            result = subprocess.run(
-                ['nvidia-smi', '--query-gpu=name', '--format=csv,noheader'],
-                capture_output=True,
-                text=True,
-                timeout=5,
-            )
-            if result.returncode == 0:
-                gpu_name = result.stdout.strip().splitlines()[0] if result.stdout.strip() else 'NVIDIA GPU'
-                gpu_info.update({
-                    'gpu_detected': True,
-                    'gpu_type': 'nvidia',
-                    'gpu_name': gpu_name,
-                })
-        except Exception:
-            pass
-        
-        if platform.system() == 'Darwin':
-            try:
-                result = subprocess.run(['uname', '-m'], capture_output=True, text=True)
-                arch = result.stdout.strip()
-                print(f"🔍 macOS Architecture: {arch}")
-                
-                if arch == 'arm64':  # Apple Silicon
-                    gpu_info.update({
-                        'gpu_detected': True,
-                        'gpu_type': 'apple_silicon',
-                        'gpu_name': 'Apple Silicon GPU',
-                        'unified_memory': True,
-                    })
-                    print("✅ Apple Silicon GPU detected")
-                else:
-                    print("❌ Intel Mac detected (no Apple Silicon GPU)")
-            except Exception as e:
-                print(f"❌ Error detecting Apple Silicon: {e}")
-                # Fallback check
-                if 'apple' in platform.processor().lower():
-                    gpu_info.update({
-                        'gpu_detected': True,
-                        'gpu_type': 'apple_silicon',
-                        'gpu_name': 'Apple Silicon GPU',
-                        'unified_memory': True,
-                    })
-                    print("✅ Apple Silicon detected via processor check")
-        
-        return gpu_info
-    
     def get_optimization_settings(self) -> Dict:
-        """Get optimization settings for detected machine"""
         return self.machine_config.get('optimization_settings', {})
-    
+
     def get_machine_info(self) -> Dict:
-        """Get detected machine information"""
         preferred = self.machine_config.get('optimization_settings', {}).get('preferred_image_processing', 'cpu')
         runtime_acceleration = preferred == 'cuda' and GPU_FRAMEWORKS['cuda']
         return {
             'name': self.machine_config.get('name', 'Unknown'),
-            'machine_id': self.machine_config.get('machine_id', 'unknown'),
+            'machine_id': self.machine_config.get('machine_id', 'generic_fallback'),
+            'notes': self.machine_config.get('notes', ''),
             'detected_info': self.machine_config.get('detected_info', {}),
             'gpu_available': runtime_acceleration,
             'acceleration_preference': preferred,
+            'match_source': self.machine_config.get('match_source', 'fallback'),
+            'match_reasons': self.machine_config.get('match_reasons', []),
         }
 
-# Initialize machine detector
-MACHINE_DETECTOR = MachineDetector()
-OPTIMIZATION_SETTINGS = MACHINE_DETECTOR.get_optimization_settings()
 
-# GPU Accelerated Image Processing
+MACHINE_DETECTOR = None
+OPTIMIZATION_SETTINGS: Dict[str, Any] = {}
+GPU_PROCESSOR = None
+
+
 class GPUImageProcessor:
     """Machine-aware image processing with optional CUDA acceleration"""
-    
+
     def __init__(self):
         self.gpu_framework = self._detect_best_framework()
-        self.machine_info = MACHINE_DETECTOR.get_machine_info()
-        
+        self.machine_info = MACHINE_DETECTOR.get_machine_info() if MACHINE_DETECTOR else {}
+
     def _detect_best_framework(self) -> str:
-        """Detect the best available runtime acceleration"""
         preferred = OPTIMIZATION_SETTINGS.get('preferred_image_processing', 'cpu')
-        
         if preferred == 'cuda' and GPU_FRAMEWORKS['cuda']:
             return 'cuda'
         return 'cpu'
-    
+
     def resize_image_gpu(self, img_array: np.ndarray, new_size: Tuple[int, int]) -> np.ndarray:
-        """Use the best available acceleration path for resizing"""
         try:
             if self.gpu_framework == 'cuda':
                 return self._resize_cuda(img_array, new_size)
@@ -306,39 +429,35 @@ class GPUImageProcessor:
         except Exception as e:
             st.warning(f"Accelerated resize failed, falling back to CPU: {e}")
             return self._resize_cpu(img_array, new_size)
-    
+
     def _resize_cuda(self, img_array: np.ndarray, new_size: Tuple[int, int]) -> np.ndarray:
-        """CUDA-based resizing for NVIDIA GPUs"""
         try:
-            # Transfer to GPU
             gpu_array = cp.asarray(img_array)
-            
-            # Calculate scale factors
             scale_factors = (
-                new_size[1] / img_array.shape[0],  # height scale
-                new_size[0] / img_array.shape[1],  # width scale
-                1.0  # channels (no scaling)
+                new_size[1] / img_array.shape[0],
+                new_size[0] / img_array.shape[1],
+                1.0
             )
-            
-            # GPU resize operation using CuPy
             resized_gpu = gpu_ndimage.zoom(gpu_array, scale_factors, order=1, prefilter=False)
-            
-            # Transfer back to CPU
             return cp.asnumpy(resized_gpu).astype(np.uint8)
-            
-        except Exception as e:
+        except Exception:
             return self._resize_cpu(img_array, new_size)
-    
+
     def _resize_cpu_optimized(self, img_array: np.ndarray, new_size: Tuple[int, int]) -> np.ndarray:
-        """Optimized CPU resizing for the Apple Silicon fallback path"""
-        return cv2.resize(img_array, new_size, interpolation=cv2.INTER_LANCZOS4)
-    
-    def _resize_cpu(self, img_array: np.ndarray, new_size: Tuple[int, int]) -> np.ndarray:
-        """Standard CPU resizing"""
         return cv2.resize(img_array, new_size, interpolation=cv2.INTER_LANCZOS4)
 
-# Initialize GPU processor
-GPU_PROCESSOR = GPUImageProcessor()
+    def _resize_cpu(self, img_array: np.ndarray, new_size: Tuple[int, int]) -> np.ndarray:
+        return cv2.resize(img_array, new_size, interpolation=cv2.INTER_LANCZOS4)
+
+
+def apply_machine_profile(override_profile_id: Optional[str] = None) -> None:
+    global MACHINE_DETECTOR, OPTIMIZATION_SETTINGS, GPU_PROCESSOR
+    MACHINE_DETECTOR = MachineDetector(override_profile_id=override_profile_id)
+    OPTIMIZATION_SETTINGS = MACHINE_DETECTOR.get_optimization_settings()
+    GPU_PROCESSOR = GPUImageProcessor()
+
+
+apply_machine_profile()
 
 # Local utility functions
 def increase_image_decompression_limit():
@@ -369,6 +488,66 @@ def find_presentation_files(directory: str) -> List[str]:
     pptx_files = find_files(directory, "*.pptx")
     zip_files = find_files(directory, "*.zip")
     return pptx_files + zip_files
+
+
+def is_archived_presentation(file_path: str) -> bool:
+    return 'all_pptx' in Path(file_path).parts
+
+
+def find_presentation_inventory(directory: str) -> Dict[str, Any]:
+    all_presentations = find_presentation_files(directory)
+    actionable: List[str] = []
+    archived: List[str] = []
+
+    for file_path in all_presentations:
+        if is_archived_presentation(file_path):
+            archived.append(file_path)
+        else:
+            actionable.append(file_path)
+
+    summary = {
+        'total_found': len(all_presentations),
+        'actionable_count': len(actionable),
+        'archived_count': len(archived),
+        'pptx_actionable_count': sum(1 for path in actionable if path.lower().endswith('.pptx')),
+        'zip_actionable_count': sum(1 for path in actionable if path.lower().endswith('.zip')),
+    }
+
+    return {
+        'all': all_presentations,
+        'actionable': actionable,
+        'archived': archived,
+        'summary': summary,
+    }
+
+
+def build_run_summary(inventory: Dict[str, Any], conflict_policy_label: str) -> Dict[str, Any]:
+    summary = dict(inventory['summary'])
+    actionable_count = summary['actionable_count']
+    summary['conflict_policy_label'] = conflict_policy_label
+    summary['button_label'] = f"Extract {actionable_count} Presentations"
+    return summary
+
+
+def build_top_summary(
+    machine_info: Dict[str, Any],
+    runtime_acceleration: str,
+    run_summary: Dict[str, Any],
+    conversion_tooling: Dict[str, bool],
+    conflict_policy_label: str,
+) -> Dict[str, Any]:
+    return {
+        "machine": machine_info["name"],
+        "mode": "CUDA" if runtime_acceleration == "cuda" else "CPU quality-first",
+        "recommended_engine": describe_recommended_stack(machine_info["machine_id"], conversion_tooling).replace("Recommended: ", ""),
+        "conflict_policy": conflict_policy_label,
+        "metrics": [
+            ("Ready", run_summary["actionable_count"]),
+            ("Processed", run_summary["archived_count"]),
+            ("PPTX", run_summary["pptx_actionable_count"]),
+            ("ZIP", run_summary["zip_actionable_count"]),
+        ],
+    }
 
 def natural_sort_key(filename: str) -> List:
     """Generate a key for natural sorting (handles numbers correctly)"""
@@ -560,11 +739,126 @@ class ConversionMethod(str, enum.Enum):
     PYTHON_PPTX = "python-pptx"
     PDF2IMAGE = "pdf2image"
 
+
+class ConflictPolicy(str, enum.Enum):
+    SKIP_SAFELY = "skip_safely"
+    OVERWRITE = "overwrite"
+    REPROCESS_NEW_FOLDER = "reprocess_new_folder"
+    REPORT_ONLY = "report_only"
+
+
 CONVERSION_METHODS = {
-    ConversionMethod.LIBREOFFICE: "LibreOffice + pdftoppm (best quality)",
+    ConversionMethod.LIBREOFFICE: "LibreOffice + Poppler (best quality)",
     ConversionMethod.PYTHON_PPTX: "Direct PPTX processing (fastest)",
     ConversionMethod.PDF2IMAGE: "PDF2Image (most compatible)"
 }
+
+CONFLICT_POLICY_LABELS = {
+    ConflictPolicy.SKIP_SAFELY.value: "Skip safely",
+    ConflictPolicy.OVERWRITE.value: "Reprocess and overwrite",
+    ConflictPolicy.REPROCESS_NEW_FOLDER.value: "Reprocess into a new folder",
+    ConflictPolicy.REPORT_ONLY.value: "Report only",
+}
+
+
+def is_python_module_available(module_name: str) -> bool:
+    return importlib.util.find_spec(module_name) is not None
+
+
+def detect_conversion_tooling() -> Dict[str, bool]:
+    return {
+        'libreoffice': bool(get_libreoffice_path()),
+        'pdftocairo': shutil.which('pdftocairo') is not None,
+        'pdftoppm': shutil.which('pdftoppm') is not None,
+        'pdf2image': is_python_module_available('pdf2image'),
+    }
+
+
+def select_pdf_rasterizer(tooling: Dict[str, bool]) -> Optional[str]:
+    if tooling.get('pdftocairo'):
+        return 'pdftocairo'
+    if tooling.get('pdftoppm'):
+        return 'pdftoppm'
+    return None
+
+
+def get_recommended_conversion_method(machine_id: str, tooling: Dict[str, bool]) -> ConversionMethod:
+    poppler_backend = select_pdf_rasterizer(tooling)
+
+    if tooling.get('libreoffice') and poppler_backend:
+        return ConversionMethod.LIBREOFFICE
+    if tooling.get('pdf2image'):
+        return ConversionMethod.PDF2IMAGE
+    return ConversionMethod.PYTHON_PPTX
+
+
+def describe_recommended_stack(machine_id: str, tooling: Dict[str, bool]) -> str:
+    recommended = get_recommended_conversion_method(machine_id, tooling)
+    if recommended == ConversionMethod.LIBREOFFICE:
+        backend = select_pdf_rasterizer(tooling) or 'poppler'
+        return f"Recommended: {CONVERSION_METHODS[recommended]} via {backend}"
+    return f"Recommended: {CONVERSION_METHODS[recommended]}"
+
+
+def build_pdf2image_kwargs(output_folder: str, tooling: Dict[str, bool]) -> Dict[str, Any]:
+    return {
+        'dpi': 300,
+        'fmt': 'png',
+        'output_folder': output_folder,
+        'paths_only': True,
+        'use_pdftocairo': bool(tooling.get('pdftocairo')),
+    }
+
+
+def resolve_existing_processing_action(
+    archived_source_exists: bool,
+    output_folder_exists: bool,
+    existing_png_count: int,
+    conflict_policy: str,
+) -> Dict[str, str]:
+    has_existing_outputs = output_folder_exists and existing_png_count > 0
+    has_conflict = archived_source_exists or has_existing_outputs
+
+    if not has_conflict:
+        return {
+            "action": "process",
+            "status": "process",
+            "message": "No prior processed output detected",
+        }
+
+    if conflict_policy == ConflictPolicy.REPORT_ONLY.value:
+        return {
+            "action": "report",
+            "status": "reported",
+            "message": "Conflict detected; report-only mode left files unchanged",
+        }
+
+    if conflict_policy == ConflictPolicy.REPROCESS_NEW_FOLDER.value:
+        return {
+            "action": "reprocess_new_folder",
+            "status": "reprocess",
+            "message": "Conflict detected; reprocessing into a new folder",
+        }
+
+    if conflict_policy == ConflictPolicy.OVERWRITE.value:
+        return {
+            "action": "reprocess",
+            "status": "reprocess",
+            "message": "Conflict detected; existing output will be overwritten",
+        }
+
+    if has_existing_outputs:
+        return {
+            "action": "skip",
+            "status": "skipped",
+            "message": "Skipped safely because existing processed output was found",
+        }
+
+    return {
+        "action": "reprocess",
+        "status": "repair",
+        "message": "Archived source found but processed output is missing; recreating output safely",
+    }
 
 @lru_cache(maxsize=1)
 def get_libreoffice_path():
@@ -710,9 +1004,13 @@ def convert_with_pdf2image(pptx_path, output_dir, status_text=None, target_resol
                 status_text.info("Converting PDF to images using pdf2image...")
             
             from pdf2image import convert_from_path
-            
-            images = convert_from_path(pdf_path, dpi=300, fmt="png")
-            slide_count = len(images)
+
+            tooling = detect_conversion_tooling()
+            rendered_paths = convert_from_path(
+                pdf_path,
+                **build_pdf2image_kwargs(temp_dir, tooling),
+            )
+            slide_count = len(rendered_paths)
             
             if slide_count == 0:
                 error_msg = "No slides were extracted from the PDF"
@@ -723,27 +1021,28 @@ def convert_with_pdf2image(pptx_path, output_dir, status_text=None, target_resol
             # GPU OPTIMIZATION: Process images in parallel batches
             def process_image_batch(batch_data):
                 batch_results = []
-                for i, img in batch_data:
-                    img_array = np.array(img)
-                    aspect_ratio = img.width / img.height
+                for i, rendered_path in batch_data:
+                    with Image.open(rendered_path) as img:
+                        img_array = np.array(img)
+                        aspect_ratio = img.width / img.height
                     
-                    if aspect_ratio > target_resolution[0] / target_resolution[1]:
-                        new_width = target_resolution[0]
-                        new_height = int(target_resolution[0] / aspect_ratio)
-                    else:
-                        new_height = target_resolution[1]
-                        new_width = int(target_resolution[1] * aspect_ratio)
+                        if aspect_ratio > target_resolution[0] / target_resolution[1]:
+                            new_width = target_resolution[0]
+                            new_height = int(target_resolution[0] / aspect_ratio)
+                        else:
+                            new_height = target_resolution[1]
+                            new_width = int(target_resolution[1] * aspect_ratio)
                     
-                    # Use GPU resize if available
-                    if GPU_PROCESSOR.gpu_framework != 'cpu':
-                        resized_array = GPU_PROCESSOR.resize_image_gpu(img_array, (new_width, new_height))
-                        resized_img = Image.fromarray(resized_array)
-                    else:
-                        resized_img = img.resize((new_width, new_height), LANCZOS)
+                        # Use GPU resize if available
+                        if GPU_PROCESSOR.gpu_framework != 'cpu':
+                            resized_array = GPU_PROCESSOR.resize_image_gpu(img_array, (new_width, new_height))
+                            resized_img = Image.fromarray(resized_array)
+                        else:
+                            resized_img = img.resize((new_width, new_height), LANCZOS)
                     
-                    output_path = os.path.join(output_dir, f"{i:02d}.png")
-                    resized_img.save(output_path, "PNG", optimize=True)
-                    batch_results.append(output_path)
+                        output_path = os.path.join(output_dir, f"{i:02d}.png")
+                        resized_img.save(output_path, "PNG", optimize=True)
+                        batch_results.append(output_path)
                 return batch_results
             
             # Process in batches
@@ -752,7 +1051,7 @@ def convert_with_pdf2image(pptx_path, output_dir, status_text=None, target_resol
             
             for batch_start in range(0, slide_count, batch_size):
                 batch_end = min(batch_start + batch_size, slide_count)
-                batch_data = [(i, images[i-1]) for i in range(batch_start + 1, batch_end + 1)]
+                batch_data = [(i, rendered_paths[i-1]) for i in range(batch_start + 1, batch_end + 1)]
                 batch_results = process_image_batch(batch_data)
                 all_results.extend(batch_results)
             
@@ -772,8 +1071,37 @@ def convert_with_pdf2image(pptx_path, output_dir, status_text=None, target_resol
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
 
+
+def render_pdf_with_poppler(pdf_path: str, temp_img_dir: str, status_text=None) -> Tuple[bool, str, List[str]]:
+    tooling = detect_conversion_tooling()
+    backend = select_pdf_rasterizer(tooling)
+
+    if not backend:
+        return False, "No Poppler rasterizer available", []
+
+    base_filename = os.path.join(temp_img_dir, "slide")
+
+    try:
+        if backend == 'pdftocairo':
+            command = [backend, '-png', '-r', '300', pdf_path, base_filename]
+        else:
+            command = [backend, '-png', '-r', '300', pdf_path, base_filename]
+
+        subprocess.run(command, check=True, capture_output=True, timeout=120)
+        extracted_files = sorted(
+            [
+                f for f in os.listdir(temp_img_dir)
+                if f.startswith("slide") and f.endswith(".png")
+            ]
+        )
+        return True, backend, extracted_files
+    except Exception as exc:
+        if status_text:
+            status_text.warning(f"{backend} rasterization failed: {exc}")
+        return False, backend, []
+
 def extract_slides_from_pptx(pptx_path, output_dir, status_text=None):
-    """GPU OPTIMIZED: Extract slides from PPTX using LibreOffice + pdftoppm method"""
+    """GPU OPTIMIZED: Extract slides from PPTX using LibreOffice + Poppler"""
     temp_dir = tempfile.mkdtemp()
     
     try:
@@ -811,7 +1139,7 @@ def extract_slides_from_pptx(pptx_path, output_dir, status_text=None):
                 status_text.error(error_msg)
             return False, error_msg, 0
             
-        # Convert PDF to images using pdftoppm
+        # Convert PDF to images using the best available Poppler rasterizer
         if status_text:
             status_text.info(f"Converting PDF to images...")
             
@@ -819,17 +1147,12 @@ def extract_slides_from_pptx(pptx_path, output_dir, status_text=None):
         success = False
         
         try:
-            base_filename = os.path.join(temp_img_dir, "slide")
-            pdftoppm_command = [
-                "pdftoppm", "-png", "-r", "300",
-                pdf_path, base_filename
-            ]
-            subprocess.run(pdftoppm_command, check=True, capture_output=True, timeout=120)
-            
-            extracted_files = sorted([f for f in os.listdir(temp_img_dir) if f.startswith("slide-") and f.endswith(".png")])
+            success, backend_used, extracted_files = render_pdf_with_poppler(pdf_path, temp_img_dir, status_text)
             slide_count = len(extracted_files)
             
-            if slide_count > 0:
+            if success and slide_count > 0:
+                if status_text:
+                    status_text.info(f"Rasterized PDF with {backend_used}")
                 # GPU OPTIMIZATION: Process images in parallel
                 def process_slide_image(args):
                     i, filename = args
@@ -862,45 +1185,50 @@ def extract_slides_from_pptx(pptx_path, output_dir, status_text=None):
                     args_list = [(i, filename) for i, filename in enumerate(extracted_files, 1)]
                     list(executor.map(process_slide_image, args_list))
                         
-                return True, f"Successfully extracted {slide_count} slides", slide_count
+                return True, f"Successfully extracted {slide_count} slides using {backend_used}", slide_count
         except Exception:
             pass
             
         # Fallback to pdf2image
         try:
             from pdf2image import convert_from_path
-            
-            images = convert_from_path(pdf_path, dpi=300, output_folder=temp_img_dir, fmt="png")
-            slide_count = len(images)
+
+            tooling = detect_conversion_tooling()
+            rendered_paths = convert_from_path(
+                pdf_path,
+                **build_pdf2image_kwargs(temp_img_dir, tooling),
+            )
+            slide_count = len(rendered_paths)
             
             if slide_count > 0:
                 # GPU OPTIMIZATION: Parallel processing for fallback too
                 def process_fallback_image(args):
-                    i, img = args
-                    img_array = np.array(img)
-                    aspect_ratio = img.width / img.height
+                    i, rendered_path = args
+                    with Image.open(rendered_path) as img:
+                        img_array = np.array(img)
+                        aspect_ratio = img.width / img.height
                     
-                    if aspect_ratio > 3840/2160:
-                        new_width = 3840
-                        new_height = int(3840 / aspect_ratio)
-                    else:
-                        new_height = 2160
-                        new_width = int(2160 * aspect_ratio)
+                        if aspect_ratio > 3840/2160:
+                            new_width = 3840
+                            new_height = int(3840 / aspect_ratio)
+                        else:
+                            new_height = 2160
+                            new_width = int(2160 * aspect_ratio)
                     
-                    # Use GPU resize if available
-                    if GPU_PROCESSOR.gpu_framework != 'cpu':
-                        resized_array = GPU_PROCESSOR.resize_image_gpu(img_array, (new_width, new_height))
-                        resized = Image.fromarray(resized_array)
-                    else:
-                        resized = img.resize((new_width, new_height), LANCZOS)
+                        # Use GPU resize if available
+                        if GPU_PROCESSOR.gpu_framework != 'cpu':
+                            resized_array = GPU_PROCESSOR.resize_image_gpu(img_array, (new_width, new_height))
+                            resized = Image.fromarray(resized_array)
+                        else:
+                            resized = img.resize((new_width, new_height), LANCZOS)
                     
-                    output_path = os.path.join(output_dir, f"{i:02d}.png")
-                    resized.save(output_path, "PNG", optimize=True)
-                    return output_path
+                        output_path = os.path.join(output_dir, f"{i:02d}.png")
+                        resized.save(output_path, "PNG", optimize=True)
+                        return output_path
                 
                 max_workers = min(OPTIMIZATION_SETTINGS.get('max_threads', 3), slide_count)
                 with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-                    args_list = [(i, img) for i, img in enumerate(images, 1)]
+                    args_list = [(i, rendered_path) for i, rendered_path in enumerate(rendered_paths, 1)]
                     list(executor.map(process_fallback_image, args_list))
                     
                 return True, f"Successfully extracted {slide_count} slides", slide_count
@@ -1197,8 +1525,8 @@ def extract_and_upscale_images(pptx_file, output_folder, conversion_method=None,
 def find_presentations() -> List[str]:
     """Find all presentation files in the input directory"""
     input_dir = get_input_directory()
-    all_presentations = find_presentation_files(input_dir)
-    return all_presentations
+    inventory = find_presentation_inventory(input_dir)
+    return inventory['actionable']
 
 class StatusManager:
     """GPU OPTIMIZED: Status manager with machine-aware threading"""
@@ -1257,8 +1585,16 @@ class StatusManager:
         self.status_text.success(message)
         if self.current_action_text:
             self.current_action_text.empty()
+def make_conflict_output_folder(output_folder: str) -> str:
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    new_output_folder = f"{output_folder} rerun {timestamp}"
+    os.makedirs(new_output_folder, exist_ok=True)
+    return new_output_folder
+
+
 def process_presentations(input_dir: str, progress_bar, status_text, create_without_logo_folder=False, 
-                 conversion_method=None, enable_auto_fallback=True, current_action_text=None) -> List[Dict]:
+                 conversion_method=None, enable_auto_fallback=True, current_action_text=None,
+                 conflict_policy: str = ConflictPolicy.SKIP_SAFELY.value) -> List[Dict]:
     """GPU OPTIMIZED: Process all PPTX and ZIP files with GPU acceleration and identical file saving logic"""
     results = []
     
@@ -1360,20 +1696,42 @@ def process_presentations(input_dir: str, progress_bar, status_text, create_with
                 
                 # Check if file is already processed and in all_pptx
                 new_pptx_path = os.path.join(all_pptx_folder, os.path.basename(pptx_file))
-                if os.path.exists(new_pptx_path):
-                    # If already processed, just update the result
-                    result["message"] = "Presentation already processed"
-                    
-                    # Count existing images
-                    png_count = len([f for f in os.listdir(output_folder) 
-                                   if f.endswith('.png') and not os.path.isdir(os.path.join(output_folder, f))])
-                    
-                    result["status"] = "success"
+                archived_source_exists = os.path.exists(new_pptx_path)
+                output_folder_exists = os.path.exists(output_folder)
+                png_count = 0
+                if output_folder_exists:
+                    png_count = len([
+                        f for f in os.listdir(output_folder)
+                        if f.endswith('.png') and not os.path.isdir(os.path.join(output_folder, f))
+                    ])
+
+                conflict_decision = resolve_existing_processing_action(
+                    archived_source_exists=archived_source_exists,
+                    output_folder_exists=output_folder_exists,
+                    existing_png_count=png_count,
+                    conflict_policy=conflict_policy,
+                )
+
+                if conflict_decision["action"] == "skip":
+                    result["status"] = conflict_decision["status"]
+                    result["message"] = conflict_decision["message"]
                     result["slide_count"] = png_count
                     result["output_dir"] = output_folder
                     results.append(result)
                     continue
-                    
+
+                if conflict_decision["action"] == "report":
+                    result["status"] = conflict_decision["status"]
+                    result["message"] = conflict_decision["message"]
+                    result["slide_count"] = png_count
+                    result["output_dir"] = output_folder
+                    results.append(result)
+                    continue
+
+                if conflict_decision["action"] == "reprocess_new_folder":
+                    output_folder = make_conflict_output_folder(output_folder)
+                    without_logo_folder = os.path.join(output_folder, 'without_logo_png')
+                
                 # Extract and upscale images from the presentation or ZIP file
                 temp_dir = None
                 
@@ -1500,50 +1858,28 @@ def process_presentations(input_dir: str, progress_bar, status_text, create_with
     return results
 
 def main():
-    st.title("4K Image (PPTX & ZIP) - Final")
-    
-    # Display machine information
+    st.title("06 Generate 4K Images")
+
+    profile_options = {"Auto detect": None}
+    for profile_id, profile in MACHINE_DETECTOR.profiles.items():
+        profile_options[profile["name"]] = profile_id
+    profile_options["Generic fallback"] = "generic_fallback"
+
+    selected_profile_label = st.selectbox(
+        "Machine profile",
+        options=list(profile_options.keys()),
+        index=0,
+        help="Use Auto detect for the current computer, or force a known machine profile.",
+    )
+    selected_profile_id = profile_options[selected_profile_label]
+
+    if selected_profile_id != MACHINE_DETECTOR.override_profile_id:
+        apply_machine_profile(selected_profile_id)
+
     machine_info = MACHINE_DETECTOR.get_machine_info()
     runtime_acceleration = GPU_PROCESSOR.gpu_framework
-    
-    with st.expander("🖥️ Machine Profile & Acceleration"):
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.markdown("**Detected Machine:**")
-            st.write(f"• **Name**: {machine_info['name']}")
-            st.write(f"• **Platform**: {machine_info['detected_info'].get('platform', 'Unknown')}")
-            st.write(f"• **Memory**: {machine_info['detected_info'].get('memory_gb', 'Unknown')} GB")
-            st.write(f"• **CPU Cores**: {machine_info['detected_info'].get('cpu_count', 'Unknown')}")
-        
-        with col2:
-            st.markdown("**Runtime Acceleration:**")
-            if runtime_acceleration == 'cuda':
-                st.success("✅ CUDA acceleration enabled")
-                
-                if 'gpu_name' in machine_info['detected_info']:
-                    st.write(f"• **GPU**: {machine_info['detected_info']['gpu_name']}")
-                
-                st.write(f"• **Max Threads**: {OPTIMIZATION_SETTINGS.get('max_threads', 4)}")
-                st.write(f"• **Batch Size**: {OPTIMIZATION_SETTINGS.get('batch_size', 2)}")
-            elif machine_info['machine_id'] == 'macbook_m3_pro':
-                st.info("ℹ️ Apple Silicon detected. Using the optimized CPU path for image work.")
-                st.write(f"• **Max Threads**: {OPTIMIZATION_SETTINGS.get('max_threads', 4)}")
-                st.write(f"• **Batch Size**: {OPTIMIZATION_SETTINGS.get('batch_size', 2)}")
-            else:
-                st.warning("⚠️ CUDA acceleration not available - using CPU")
-                
-                if machine_info['machine_id'] == 'windows_i5_rtx3050':
-                    st.info("💡 **To enable CUDA acceleration**: `pip install cupy-cuda12x`")
-                else:
-                    st.info("💡 This fallback path is CPU-only.")
-        
-        if machine_info['machine_id'] == 'macbook_m3_pro':
-            st.info("🍎 **MacBook profile**: tuned for your M3 Pro with conservative memory use and fast CPU resizing.")
-        elif machine_info['machine_id'] == 'windows_i5_rtx3050':
-            st.info("🎮 **RTX profile**: tuned for overnight bulk runs with CUDA when CuPy is installed.")
-    
-    st.write("⚡ Final machine-aware version for your MacBook Pro M3 Pro and Windows RTX 3050 laptop.")
+    conversion_tooling = detect_conversion_tooling()
+    recommended_method = get_recommended_conversion_method(machine_info['machine_id'], conversion_tooling)
     
     input_dir = get_input_directory()
     
@@ -1551,68 +1887,111 @@ def main():
         st.error(f"Input directory not found: {input_dir}")
         st.info("Please create an 'input' directory in the project root and add your files.")
         return
-    
-    # Find presentations
-    all_presentations = find_presentations()
-    
+
+    top_left, top_right = st.columns([1, 1])
+    with top_left:
+        st.subheader("Part 1 of 3: Setup")
+        conflict_policy = st.selectbox(
+            "Conflict policy",
+            options=list(CONFLICT_POLICY_LABELS.keys()),
+            format_func=lambda value: CONFLICT_POLICY_LABELS[value],
+            index=0,
+            help="Applied automatically during bulk runs. Default is safe and non-blocking for overnight processing.",
+        )
+
+    inventory = find_presentation_inventory(input_dir)
+    run_summary = build_run_summary(inventory, CONFLICT_POLICY_LABELS[conflict_policy])
+    top_summary = build_top_summary(
+        machine_info=machine_info,
+        runtime_acceleration=runtime_acceleration,
+        run_summary=run_summary,
+        conversion_tooling=conversion_tooling,
+        conflict_policy_label=CONFLICT_POLICY_LABELS[conflict_policy],
+    )
+    all_presentations = inventory['actionable']
+
+    with top_right:
+        st.subheader("Part 1 of 3: Summary")
+        metric_cols = st.columns(4)
+        for column, (label, value) in zip(metric_cols, top_summary["metrics"]):
+            with column:
+                st.metric(label, value)
+        st.caption(
+            f"Found {run_summary['total_found']} files under input. "
+            f"{run_summary['actionable_count']} are ready to run; {run_summary['archived_count']} are already processed."
+        )
+
     if not all_presentations:
         st.warning("No presentation files found in the input directory.")
         return
-    
-    # Display number of presentations found
-    total_presentations = len(all_presentations)
-    pptx_count = sum(1 for f in all_presentations if f.lower().endswith('.pptx'))
-    zip_count = sum(1 for f in all_presentations if f.lower().endswith('.zip'))
-    st.info(f"Found {total_presentations} files in input directory: {pptx_count} PPTX, {zip_count} ZIP")
-    
-    # Options section
-    st.header("Options")
-    
-    # Option for creating without_logo_png folder
-    create_without_logo_folder = st.checkbox("Create 'without_logo_png' folder", value=False, 
-                                          help="If checked, a folder containing original images without logo and copyright will be created")
-    
-    # Runtime-specific options
-    if runtime_acceleration == 'cuda':
-        st.subheader("🚀 CUDA Settings")
-        
-        custom_batch_size = st.slider(
-            "Batch Size (images processed simultaneously)",
-            min_value=1,
-            max_value=8,
-            value=OPTIMIZATION_SETTINGS.get('batch_size', 2),
-            help="Higher values use more GPU memory but may be faster"
+
+    middle_left, middle_right = st.columns([1.15, 0.85])
+    with middle_left:
+        st.subheader("Part 2 of 3: Conversion")
+
+        create_without_logo_folder = st.checkbox(
+            "Keep raw extracted images without logo/copyright",
+            value=False,
+            help="If checked, a folder containing original images without logo and copyright will be created",
         )
-        OPTIMIZATION_SETTINGS['batch_size'] = custom_batch_size
-        
-        if custom_batch_size > 4:
-            st.warning("⚠️ High batch sizes may cause GPU memory issues with very large images")
-    
-    # Conversion method selection (only for PPTX files)
-    st.subheader("Conversion Method (PPTX only)")
-    st.write("Select the method to use for extracting slides from PPTX presentations:")
-    st.caption("Note: ZIP files are processed directly and don't use these conversion methods")
-    
-    # Create a dropdown for conversion method selection
-    conversion_methods = list(CONVERSION_METHODS.items())
-    conversion_method = st.selectbox(
-        "Select conversion method:",
-        options=[method.value for method, _ in conversion_methods],
-        format_func=lambda x: CONVERSION_METHODS[x],
-        index=0,
-        help="Choose the method used to extract slides from PPTX presentations (not applicable to ZIP files)"
-    )
-    
-    # Option for automatic fallback
-    enable_auto_fallback = st.checkbox(
-        "Enable automatic fallback", 
-        value=True,
-        help="If checked, automatically try other methods if the selected method fails"
-    )
-    
-    # Information about conversion methods and file types
-    with st.expander("About File Types and Conversion Methods"):
-        st.markdown("""
+
+        st.caption("ZIP files are processed directly and do not use PPTX conversion methods.")
+
+        conversion_methods = list(CONVERSION_METHODS.items())
+        conversion_method = st.selectbox(
+            "Select conversion method:",
+            options=[method.value for method, _ in conversion_methods],
+            format_func=lambda x: CONVERSION_METHODS[x],
+            index=next(
+                (
+                    idx
+                    for idx, (method, _) in enumerate(conversion_methods)
+                    if method == recommended_method
+                ),
+                0,
+            ),
+            help="Choose the method used to extract slides from PPTX presentations (not applicable to ZIP files)"
+        )
+
+        enable_auto_fallback = st.checkbox(
+            "Enable automatic fallback", 
+            value=True,
+            help="If checked, automatically try other methods if the selected method fails"
+        )
+
+        if runtime_acceleration == 'cuda':
+            with st.expander("CUDA Settings", expanded=False):
+                custom_batch_size = st.slider(
+                    "Batch Size (images processed simultaneously)",
+                    min_value=1,
+                    max_value=8,
+                    value=OPTIMIZATION_SETTINGS.get('batch_size', 2),
+                    help="Higher values use more GPU memory but may be faster"
+                )
+                OPTIMIZATION_SETTINGS['batch_size'] = custom_batch_size
+                
+                if custom_batch_size > 4:
+                    st.warning("⚠️ High batch sizes may cause GPU memory issues with very large images")
+
+        with st.expander("Advanced / Technical", expanded=False):
+            st.write(
+                f"Detected tools: LibreOffice={'yes' if conversion_tooling['libreoffice'] else 'no'}, "
+                f"pdftocairo={'yes' if conversion_tooling['pdftocairo'] else 'no'}, "
+                f"pdftoppm={'yes' if conversion_tooling['pdftoppm'] else 'no'}, "
+                f"pdf2image={'yes' if conversion_tooling['pdf2image'] else 'no'}"
+            )
+            st.write(f"Active profile: {machine_info['machine_id']}")
+            st.write(f"Mode: {top_summary['mode']}")
+            st.write(f"Recommended engine: {top_summary['recommended_engine']}")
+            st.write(f"Threads: {OPTIMIZATION_SETTINGS.get('max_threads', 4)}")
+            st.write(f"Batch size: {OPTIMIZATION_SETTINGS.get('batch_size', 2)}")
+            if machine_info['match_reasons']:
+                st.write("Match reasons:")
+                for reason in machine_info['match_reasons']:
+                    st.write(f"• {reason}")
+
+        with st.expander("Help", expanded=False):
+            st.markdown("""
         ### Supported File Types
         
         #### PPTX Files
@@ -1629,9 +2008,9 @@ def main():
         
         ### Conversion Methods (PPTX only)
         
-        #### LibreOffice + pdftoppm (best quality)
+        #### LibreOffice + Poppler (best quality)
         - Uses LibreOffice to convert PPTX to PDF
-        - Uses pdftoppm to convert PDF to high-quality images
+        - Prefers pdftocairo, then falls back to pdftoppm for PDF rasterization
         - GPU-accelerated image resizing
         - Provides the best visual quality for complex slides
         
@@ -1647,19 +2026,38 @@ def main():
         - GPU-accelerated resizing and processing
         - More compatible fallback option
         """)
-        
-        st.info("💡 Tip: GPU acceleration is applied to all methods for faster image processing.")
+            
+            st.info("💡 Tip: GPU acceleration is applied to all methods for faster image processing.")
+
+    with middle_right:
+        st.subheader("Part 3 of 3: Run")
+        st.write(f"**Machine:** {top_summary['machine']}")
+        st.write(f"**Mode:** {top_summary['mode']}")
+        st.write(f"**Recommended engine:** {top_summary['recommended_engine']}")
+        st.write(f"**Conflict policy:** {top_summary['conflict_policy']}")
+
+        with st.expander("Machine Details", expanded=False):
+            st.write(f"Source: {machine_info['match_source'].title()}")
+            st.write(f"Platform: {machine_info['detected_info'].get('platform', 'Unknown')}")
+            st.write(f"Memory: {machine_info['detected_info'].get('memory_gb', 'Unknown')} GB")
+            st.write(f"CPU Cores: {machine_info['detected_info'].get('cpu_count', 'Unknown')}")
+            if machine_info['notes']:
+                st.caption(machine_info['notes'])
+            if machine_info['machine_id'] == 'macbook_pro_m3_pro_18gb':
+                st.info("🍎 MacBook profile tuned for conservative memory use and fast CPU resizing.")
+            elif machine_info['machine_id'] == 'windows_i5_12450h_rtx3050_16gb':
+                st.info("🎮 RTX profile tuned for overnight bulk runs with CUDA when CuPy is installed.")
     
-    # Process presentations
-    st.header("Extract Presentations")
-    
-    button_label = "🚀 Extract with CUDA Acceleration" if runtime_acceleration == 'cuda' else "Extract Presentations"
-    if st.button(button_label, disabled=total_presentations == 0):
-        if total_presentations == 0:
+    button_label = (
+        f"🚀 {run_summary['button_label']}"
+        if runtime_acceleration == 'cuda'
+        else run_summary['button_label']
+    )
+    if middle_right.button(button_label, disabled=run_summary['actionable_count'] == 0, use_container_width=True):
+        if run_summary['actionable_count'] == 0:
             st.warning("No presentations found for processing.")
             return
         
-        # Process presentations with GPU acceleration
         progress_bar = st.progress(0)
         status_text = st.empty()
         current_action_text = st.empty()
@@ -1675,7 +2073,8 @@ def main():
             create_without_logo_folder,
             conversion_method=conversion_method,
             enable_auto_fallback=enable_auto_fallback,
-            current_action_text=current_action_text
+            current_action_text=current_action_text,
+            conflict_policy=conflict_policy,
         )
         
         end_time = time.time()
@@ -1685,11 +2084,10 @@ def main():
         current_action_text.empty()
         
         runtime_label = runtime_acceleration.upper() if runtime_acceleration != 'cpu' else 'CPU'
-        status_text.success(f"✅ Processed {total_presentations} presentations in {processing_time:.1f}s using {runtime_label}")
+        status_text.success(f"✅ Processed {run_summary['actionable_count']} presentations in {processing_time:.1f}s using {runtime_label}")
         
         with results_container:
-            st.subheader("Processing Results")
-            
+            st.subheader("Results")
             col1, col2, col3, col4 = st.columns(4)
             with col1:
                 st.metric("⚡ Runtime", runtime_label)
@@ -1700,7 +2098,7 @@ def main():
                 st.metric("✅ Successful", success_count)
             with col4:
                 if processing_time > 0:
-                    files_per_second = total_presentations / processing_time
+                    files_per_second = run_summary['actionable_count'] / processing_time
                     st.metric("🚀 Speed", f"{files_per_second:.1f} files/sec")
             
             if runtime_acceleration == 'cuda':
@@ -1710,16 +2108,20 @@ def main():
                 if time_saved > 0:
                     st.success(f"🎯 **GPU Acceleration Benefit**: Estimated {time_saved:.1f}s saved vs CPU-only processing")
             
-            # Statistics
             error_count = sum(1 for r in results if r["status"] == "error")
+            skipped_count = sum(1 for r in results if r["status"] == "skipped")
+            reported_count = sum(1 for r in results if r["status"] == "reported")
             slide_count = sum(r.get("slide_count", 0) for r in results)
             
-            st.write(f"❌ Errors: {error_count}")
-            st.write(f"📊 Total slides extracted: {slide_count}")
+            stats_col1, stats_col2, stats_col3 = st.columns(3)
+            stats_col1.write(f"❌ Errors: {error_count}")
+            stats_col2.write(f"⏭️ Skipped / Reported: {skipped_count + reported_count}")
+            stats_col3.write(f"📊 Slides extracted: {slide_count}")
             
-            # Detailed results
             for result in results:
                 status_icon = "✅" if result["status"] == "success" else "❌"
+                if result["status"] in {"skipped", "reported"}:
+                    status_icon = "⏭️"
                 file_name = os.path.basename(result["file_path"])
                 
                 with st.expander(f"{status_icon} {file_name}"):
@@ -1729,6 +2131,243 @@ def main():
                     if result["status"] == "success":
                         st.write(f"**Slides extracted:** {result['slide_count']}")
                         st.write(f"**Output directory:** {result['output_dir']}")
+
+def main():
+    st.title("06 Generate 4K Images")
+
+    profile_options = {"Auto detect": None}
+    for profile_id, profile in MACHINE_DETECTOR.profiles.items():
+        profile_options[profile["name"]] = profile_id
+    profile_options["Generic fallback"] = "generic_fallback"
+
+    input_dir = get_input_directory()
+    if not os.path.exists(input_dir):
+        st.error(f"Input directory not found: {input_dir}")
+        st.info("Please create an 'input' directory in the project root and add your files.")
+        return
+
+    top_controls = st.columns([1.2, 1.2, 1.0])
+
+    with top_controls[0]:
+        selected_profile_label = st.selectbox(
+            "Machine profile",
+            options=list(profile_options.keys()),
+            index=0,
+            help="Use Auto detect for the current computer, or force a known machine profile.",
+        )
+        selected_profile_id = profile_options[selected_profile_label]
+        if selected_profile_id != MACHINE_DETECTOR.override_profile_id:
+            apply_machine_profile(selected_profile_id)
+
+    machine_info = MACHINE_DETECTOR.get_machine_info()
+    runtime_acceleration = GPU_PROCESSOR.gpu_framework
+    conversion_tooling = detect_conversion_tooling()
+    recommended_method = get_recommended_conversion_method(machine_info['machine_id'], conversion_tooling)
+
+    with top_controls[1]:
+        conflict_policy = st.selectbox(
+            "Conflict policy",
+            options=list(CONFLICT_POLICY_LABELS.keys()),
+            format_func=lambda value: CONFLICT_POLICY_LABELS[value],
+            index=0,
+            help="Applied automatically during bulk runs. Default is safe and non-blocking for overnight processing.",
+        )
+
+    inventory = find_presentation_inventory(input_dir)
+    run_summary = build_run_summary(inventory, CONFLICT_POLICY_LABELS[conflict_policy])
+    top_summary = build_top_summary(
+        machine_info=machine_info,
+        runtime_acceleration=runtime_acceleration,
+        run_summary=run_summary,
+        conversion_tooling=conversion_tooling,
+        conflict_policy_label=CONFLICT_POLICY_LABELS[conflict_policy],
+    )
+    all_presentations = inventory['actionable']
+
+    button_label = (
+        f"🚀 {run_summary['button_label']}"
+        if runtime_acceleration == 'cuda'
+        else run_summary['button_label']
+    )
+    with top_controls[2]:
+        st.caption("Run")
+        run_clicked = st.button(button_label, disabled=run_summary['actionable_count'] == 0, use_container_width=True)
+
+    metric_cols = st.columns(4)
+    for column, (label, value) in zip(metric_cols, top_summary["metrics"]):
+        with column:
+            st.metric(label, value)
+
+    st.caption(
+        f"Machine: {top_summary['machine']} | Mode: {top_summary['mode']} | Recommended: {top_summary['recommended_engine']}"
+    )
+    st.caption(
+        f"Found {run_summary['total_found']} files under input. "
+        f"{run_summary['actionable_count']} are ready to run; {run_summary['archived_count']} are already processed."
+    )
+
+    if not all_presentations:
+        st.warning("No presentations found for processing.")
+        return
+
+    st.subheader("Settings")
+    settings_cols = st.columns([1, 1])
+
+    with settings_cols[0]:
+        create_without_logo_folder = st.checkbox(
+            "Keep raw extracted images without logo/copyright",
+            value=False,
+            help="If checked, a folder containing original images without logo and copyright will be created",
+        )
+
+        if runtime_acceleration == 'cuda':
+            with st.expander("CUDA Settings", expanded=False):
+                custom_batch_size = st.slider(
+                    "Batch Size (images processed simultaneously)",
+                    min_value=1,
+                    max_value=8,
+                    value=OPTIMIZATION_SETTINGS.get('batch_size', 2),
+                    help="Higher values use more GPU memory but may be faster"
+                )
+                OPTIMIZATION_SETTINGS['batch_size'] = custom_batch_size
+                if custom_batch_size > 4:
+                    st.warning("High batch sizes may cause GPU memory issues with very large images")
+
+    with settings_cols[1]:
+        st.caption("ZIP files are processed directly and do not use PPTX conversion methods.")
+        conversion_methods = list(CONVERSION_METHODS.items())
+        conversion_method = st.selectbox(
+            "Conversion method",
+            options=[method.value for method, _ in conversion_methods],
+            format_func=lambda x: CONVERSION_METHODS[x],
+            index=next(
+                (
+                    idx
+                    for idx, (method, _) in enumerate(conversion_methods)
+                    if method == recommended_method
+                ),
+                0,
+            ),
+            help="Choose the method used to extract slides from PPTX presentations."
+        )
+        enable_auto_fallback = st.checkbox(
+            "Enable automatic fallback",
+            value=True,
+            help="If checked, automatically try other methods if the selected method fails"
+        )
+
+    with st.expander("Technical Details", expanded=False):
+        st.write(
+            f"Detected tools: LibreOffice={'yes' if conversion_tooling['libreoffice'] else 'no'}, "
+            f"pdftocairo={'yes' if conversion_tooling['pdftocairo'] else 'no'}, "
+            f"pdftoppm={'yes' if conversion_tooling['pdftoppm'] else 'no'}, "
+            f"pdf2image={'yes' if conversion_tooling['pdf2image'] else 'no'}"
+        )
+        st.write(f"Active profile: {machine_info['machine_id']}")
+        st.write(f"Source: {machine_info['match_source'].title()}")
+        st.write(f"Threads: {OPTIMIZATION_SETTINGS.get('max_threads', 4)}")
+        st.write(f"Batch size: {OPTIMIZATION_SETTINGS.get('batch_size', 2)}")
+        if machine_info['match_reasons']:
+            st.write("Match reasons:")
+            for reason in machine_info['match_reasons']:
+                st.write(f"• {reason}")
+
+    with st.expander("Help", expanded=False):
+        st.markdown("""
+### Supported File Types
+
+#### PPTX Files
+- PowerPoint presentation files
+- Slides are extracted and converted to images
+- Multiple conversion methods available (see below)
+
+#### ZIP Files
+- ZIP archives containing image files (PNG, JPG, JPEG)
+- Images are extracted directly from the ZIP
+- Automatically sorted by numeric prefix (e.g., 1_Title.png, 2_Content.png)
+- Upscaled to 4K if needed using GPU acceleration
+- No conversion method selection needed
+
+### Conversion Methods (PPTX only)
+
+#### LibreOffice + Poppler (best quality)
+- Uses LibreOffice to convert PPTX to PDF
+- Prefers pdftocairo, then falls back to pdftoppm for PDF rasterization
+- GPU-accelerated image resizing
+- Provides the best visual quality for complex slides
+
+#### Direct PPTX processing (fastest)
+- Uses python-pptx to extract slides directly
+- GPU-accelerated image processing
+- Faster than other methods
+- Good for simple presentations with basic elements
+
+#### PDF2Image (most compatible)
+- Uses LibreOffice to convert PPTX to PDF
+- Uses pdf2image library to convert PDF to images
+- GPU-accelerated resizing and processing
+- More compatible fallback option
+        """)
+        st.info("Tip: GPU acceleration is applied to all methods for faster image processing.")
+
+    if run_clicked:
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+        current_action_text = st.empty()
+        results_container = st.container()
+
+        start_time = time.time()
+        results = process_presentations(
+            input_dir,
+            progress_bar,
+            status_text,
+            create_without_logo_folder,
+            conversion_method=conversion_method,
+            enable_auto_fallback=enable_auto_fallback,
+            current_action_text=current_action_text,
+            conflict_policy=conflict_policy,
+        )
+
+        processing_time = time.time() - start_time
+        current_action_text.empty()
+        runtime_label = runtime_acceleration.upper() if runtime_acceleration != 'cpu' else 'CPU'
+        status_text.success(f"Processed {run_summary['actionable_count']} presentations in {processing_time:.1f}s using {runtime_label}")
+
+        with results_container:
+            st.subheader("Results")
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("Runtime", runtime_label)
+            with col2:
+                st.metric("Time (sec)", f"{processing_time:.1f}")
+            with col3:
+                success_count = sum(1 for r in results if r["status"] == "success")
+                st.metric("Successful", success_count)
+            with col4:
+                if processing_time > 0:
+                    st.metric("Speed", f"{run_summary['actionable_count'] / processing_time:.1f} files/sec")
+
+            error_count = sum(1 for r in results if r["status"] == "error")
+            skipped_count = sum(1 for r in results if r["status"] in {"skipped", "reported"})
+            slide_count = sum(r.get("slide_count", 0) for r in results)
+
+            stats_col1, stats_col2, stats_col3 = st.columns(3)
+            stats_col1.write(f"Errors: {error_count}")
+            stats_col2.write(f"Skipped / Reported: {skipped_count}")
+            stats_col3.write(f"Slides extracted: {slide_count}")
+
+            for result in results:
+                status_icon = "✅" if result["status"] == "success" else "❌"
+                if result["status"] in {"skipped", "reported"}:
+                    status_icon = "⏭️"
+                file_name = os.path.basename(result["file_path"])
+                with st.expander(f"{status_icon} {file_name}"):
+                    st.write(f"**Status:** {result['status']}")
+                    st.write(f"**Message:** {result['message']}")
+                    if result["status"] == "success":
+                        st.write(f"**Slides extracted:** {result['slide_count']}")
+                        st.write(f"**Output directory:** {result['output_dir']}")
+
 
 if __name__ == "__main__":
     main()
