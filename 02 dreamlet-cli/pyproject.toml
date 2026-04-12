@@ -1,0 +1,24 @@
+[project]
+name = "dreamlet-cli"
+version = "0.1.0"
+description = "Standalone CLI for Dreamlet 4K images, Kokoro audio, and MP4 rendering"
+requires-python = ">=3.11"
+dependencies = [
+    "ffmpeg-python>=0.2.0",
+    "numpy>=2.2.4",
+    "opencv-python-headless>=4.11.0.86",
+    "pillow>=11.1.0",
+    "python-pptx>=1.0.2",
+    "pdf2image>=1.17.0",
+    "psutil>=7.0.0",
+    "requests>=2.32.3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"

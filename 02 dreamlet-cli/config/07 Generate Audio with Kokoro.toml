@@ -1,0 +1,23 @@
+[paths]
+input_root = "../input"
+
+[machine]
+profile = "windows_i5_12450h_rtx3050_16gb"
+
+[run]
+conflict_policy = "skip_safely"
+audio_format = "mp3"
+generate_timestamps = false
+save_timestamps = false
+
+[languages.English]
+enabled = true
+voice = "af_heart"
+speed = 1.0
+normalize = true
+
+[languages.Hindi]
+enabled = false
+voice = "hf_alpha"
+speed = 1.0
+normalize = true

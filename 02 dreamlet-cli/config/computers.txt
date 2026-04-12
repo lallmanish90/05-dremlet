@@ -1,0 +1,17 @@
+- MacBook Pro M3 Pro: implemented and verified locally.
+- Windows Acer RTX 3050 laptop: machine-aware Windows/CUDA path is implemented, but it has not yet been run on the actual machine.
+
+Computer 1: MacBook Pro
+- CPU: Apple M3 Pro
+- RAM: 18 GB
+- GPU: Apple integrated GPU / Metal
+- OS family: macOS
+- Machine profile used by the code: macbook_pro_m3_pro_18gb
+
+Computer 2: Acer Windows laptop
+- CPU: Intel Core i5-12450H
+- RAM: 16 GB
+- GPU: NVIDIA GeForce RTX 3050 Laptop GPU
+- Storage: SSD
+- OS family: Windows
+- Machine profile used by the code: windows_i5_12450h_rtx3050_16gb

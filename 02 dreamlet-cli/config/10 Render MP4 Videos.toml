@@ -1,0 +1,20 @@
+[paths]
+input_root = "../input"
+output_root = "../output"
+
+[machine]
+profile = "windows_i5_12450h_rtx3050_16gb"
+
+[run]
+conflict_policy = "skip_safely"
+language = "English"
+generate_regular = true
+generate_summary = true
+
+[selection]
+include_courses = ["*"]
+exclude_courses = []
+include_sections = ["*"]
+exclude_sections = []
+include_lectures = ["*"]
+exclude_lectures = []

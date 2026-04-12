@@ -1,0 +1,14 @@
+[paths]
+input_root = "../input"
+config_root = "../config"
+
+[machine]
+profile = "windows_i5_12450h_rtx3050_16gb"
+
+[run]
+conflict_policy = "skip_safely"
+keep_raw_without_logo = false
+
+[conversion]
+method = "libreoffice"
+enable_auto_fallback = true
