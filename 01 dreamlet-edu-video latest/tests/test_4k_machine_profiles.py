@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import io
 import importlib.util
+import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import uuid
@@ -17,6 +19,28 @@ def load_page_module():
     assert spec.loader is not None
     spec.loader.exec_module(module)
     return module
+
+
+def load_page_module_with_stdout(stdout):
+    original_stdout = sys.stdout
+    try:
+        sys.stdout = stdout
+        return load_page_module()
+    finally:
+        sys.stdout = original_stdout
+
+
+def test_page_import_does_not_crash_with_cp1252_stdout():
+    stdout_buffer = io.BytesIO()
+    stdout = io.TextIOWrapper(stdout_buffer, encoding="cp1252", errors="strict")
+
+    module = load_page_module_with_stdout(stdout)
+
+    stdout.flush()
+    output = stdout_buffer.getvalue().decode("cp1252")
+
+    assert module is not None
+    assert "CUDA framework" in output
 
 
 def test_machine_profiles_define_expected_two_machine_profiles():

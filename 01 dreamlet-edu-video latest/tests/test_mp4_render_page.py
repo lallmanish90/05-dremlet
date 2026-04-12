@@ -158,3 +158,31 @@ def test_build_render_inventory_counts_ready_and_processed_outputs():
         assert inventory["summary"]["ready_count"] == 0
         assert inventory["summary"]["processed_count"] == 1
 
+
+def test_set_global_course_selection_updates_all_course_flags():
+    module = load_page_module()
+
+    session_state = {}
+    organized_data = {
+        "Main": {
+            "Course 01": {"Section A": {}},
+            "Course 02": {"Section B": {}},
+        },
+        "Archive": {
+            "Course 03": {"Section C": {}},
+        },
+    }
+
+    module.set_global_course_selection(session_state, organized_data, True)
+
+    assert session_state["mp4_select_all"] is True
+    assert session_state[module.build_course_selection_state_key("Main", "Course 01")] is True
+    assert session_state[module.build_course_selection_state_key("Main", "Course 02")] is True
+    assert session_state[module.build_course_selection_state_key("Archive", "Course 03")] is True
+
+    module.set_global_course_selection(session_state, organized_data, False)
+
+    assert session_state["mp4_select_all"] is False
+    assert session_state[module.build_course_selection_state_key("Main", "Course 01")] is False
+    assert session_state[module.build_course_selection_state_key("Main", "Course 02")] is False
+    assert session_state[module.build_course_selection_state_key("Archive", "Course 03")] is False

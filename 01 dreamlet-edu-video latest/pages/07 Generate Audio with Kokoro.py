@@ -618,6 +618,173 @@ def build_audio_top_summary(machine_info: Dict[str, Any], runtime_info: Dict[str
     }
 
 
+def format_duration(seconds: Optional[float]) -> str:
+    if seconds is None:
+        return "—"
+
+    if seconds < 60:
+        return f"{seconds:.1f}s"
+
+    total_seconds = int(round(seconds))
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, secs = divmod(remainder, 60)
+
+    if hours:
+        return f"{hours}h {minutes}m {secs}s"
+    return f"{minutes}m {secs}s"
+
+
+def format_file_size(size_bytes: Optional[int]) -> str:
+    if size_bytes is None:
+        return "—"
+    if size_bytes == 0:
+        return "0 B"
+
+    value = float(size_bytes)
+    units = ["B", "KB", "MB", "GB"]
+    for unit in units:
+        if value < 1024 or unit == units[-1]:
+            if unit == "B":
+                return f"{int(value)} B"
+            return f"{value:.1f} {unit}"
+        value /= 1024
+
+    return "—"
+
+
+def create_run_telemetry(total_sections: int) -> Dict[str, Any]:
+    return {
+        "active": True,
+        "run_started_at": time.time(),
+        "handled_sections": 0,
+        "total_sections": max(1, total_sections),
+        "successful_sections": 0,
+        "skipped_sections": 0,
+        "failed_sections": 0,
+        "current_section_time": None,
+        "average_section_time": None,
+        "total_successful_processing_time": 0.0,
+        "last_file_size_bytes": None,
+        "total_generated_size_bytes": 0,
+        "overall_eta_seconds": None,
+        "current_file_name": None,
+        "current_language": None,
+        "current_course": None,
+        "current_lecture": None,
+        "current_status": None,
+    }
+
+
+def update_run_telemetry(
+    telemetry: Dict[str, Any],
+    result: Dict[str, Any],
+    *,
+    language: str,
+    course: str,
+    lecture: str,
+) -> Dict[str, Any]:
+    telemetry["handled_sections"] += 1
+    telemetry["current_language"] = language
+    telemetry["current_course"] = course
+    telemetry["current_lecture"] = lecture
+    telemetry["current_status"] = result.get("status")
+
+    file_name_source = result.get("output") or result.get("file")
+    if file_name_source:
+        telemetry["current_file_name"] = os.path.basename(file_name_source)
+
+    if result.get("status") == "processed":
+        processing_time = float(result.get("processing_time", 0.0))
+        telemetry["current_section_time"] = processing_time
+        telemetry["successful_sections"] += 1
+        telemetry["total_successful_processing_time"] += processing_time
+        telemetry["average_section_time"] = (
+            telemetry["total_successful_processing_time"] / telemetry["successful_sections"]
+        )
+
+        output_path = result.get("output")
+        if output_path and os.path.exists(output_path):
+            file_size_bytes = os.path.getsize(output_path)
+            telemetry["last_file_size_bytes"] = file_size_bytes
+            telemetry["total_generated_size_bytes"] += file_size_bytes
+    elif result.get("status") in {"skipped", "reported"}:
+        telemetry["skipped_sections"] += 1
+    elif result.get("status") == "failed":
+        telemetry["failed_sections"] += 1
+
+    elapsed = max(0.001, time.time() - telemetry["run_started_at"])
+    if telemetry["handled_sections"] > 0:
+        remaining_sections = max(0, telemetry["total_sections"] - telemetry["handled_sections"])
+        telemetry["overall_eta_seconds"] = (elapsed / telemetry["handled_sections"]) * remaining_sections
+    else:
+        telemetry["overall_eta_seconds"] = None
+
+    return telemetry
+
+
+def build_run_telemetry_summary(telemetry: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    if not telemetry:
+        return {
+            "metrics": [
+                ("Current Section Time", "—"),
+                ("Average Section Time", "—"),
+                ("Last File Size", "—"),
+                ("Total Generated Size", "0 B"),
+                ("Overall ETA", "Calculating..."),
+            ],
+            "caption": "No active run telemetry yet.",
+        }
+
+    if not telemetry.get("active") and telemetry.get("handled_sections", 0) >= telemetry.get("total_sections", 0):
+        eta_value = "Complete"
+    elif telemetry.get("handled_sections", 0) == 0 or telemetry.get("overall_eta_seconds") is None:
+        eta_value = "Calculating..."
+    else:
+        eta_value = format_duration(telemetry["overall_eta_seconds"])
+
+    metrics = [
+        ("Current Section Time", format_duration(telemetry.get("current_section_time"))),
+        ("Average Section Time", format_duration(telemetry.get("average_section_time"))),
+        ("Last File Size", format_file_size(telemetry.get("last_file_size_bytes"))),
+        ("Total Generated Size", format_file_size(telemetry.get("total_generated_size_bytes", 0))),
+        ("Overall ETA", eta_value),
+    ]
+
+    context_parts = [
+        f"Handled: {telemetry.get('handled_sections', 0)}/{telemetry.get('total_sections', 0)}",
+    ]
+    if telemetry.get("current_language"):
+        context_parts.append(f"Language: {telemetry['current_language']}")
+    if telemetry.get("current_course"):
+        context_parts.append(f"Course: {telemetry['current_course']}")
+    if telemetry.get("current_lecture"):
+        context_parts.append(f"Lecture: {telemetry['current_lecture']}")
+    if telemetry.get("current_file_name"):
+        context_parts.append(f"File: {telemetry['current_file_name']}")
+    if telemetry.get("current_status"):
+        context_parts.append(f"Status: {telemetry['current_status']}")
+
+    return {"metrics": metrics, "caption": " | ".join(context_parts)}
+
+
+def get_result_file_name(result: Dict[str, Any]) -> str:
+    file_name_source = result.get("file") or result.get("output")
+    if not file_name_source:
+        return "Unknown file"
+    return os.path.basename(file_name_source)
+
+
+def render_run_telemetry(placeholder, telemetry: Optional[Dict[str, Any]]) -> None:
+    summary = build_run_telemetry_summary(telemetry)
+    with placeholder.container():
+        st.subheader("Run Telemetry")
+        metric_cols = st.columns(5)
+        for column, (label, value) in zip(metric_cols, summary["metrics"]):
+            with column:
+                st.metric(label, value)
+        st.caption(summary["caption"])
+
+
 def build_selected_language_inventory(selected_languages: List[str], audio_format: str, conflict_policy: str) -> Dict[str, Any]:
     combined_jobs: List[Dict[str, Any]] = []
     summary = {
@@ -652,6 +819,7 @@ def generate_tts_for_sections(
     conflict_policy: str = ConflictPolicy.SKIP_SAFELY.value,
     request_timeout_sec: int = 180,
     max_sections_per_batch: int = 12,
+    progress_callback=None,
 ) -> List[Dict]:
     """
     Generate TTS for a list of section files
@@ -696,6 +864,8 @@ def generate_tts_for_sections(
                     "processing_time": 0,
                     "word_count": 0
                 })
+                if progress_callback:
+                    progress_callback(results[-1])
                 continue
             if output_decision["action"] == "report":
                 results.append({
@@ -707,6 +877,8 @@ def generate_tts_for_sections(
                     "processing_time": 0,
                     "word_count": 0
                 })
+                if progress_callback:
+                    progress_callback(results[-1])
                 continue
             if output_decision["action"] == "render_new_output":
                 output_filename = f"{section_number} (rerun {int(time.time())}).{response_format}"
@@ -765,6 +937,7 @@ def generate_tts_for_sections(
                             json.dump(result["timestamps"], f, indent=2)
                 
                 # Add additional statistics
+                    result["file"] = file_path
                     result["processing_time"] = processing_time
                     result["word_count"] = word_count
                     result["output"] = output_path
@@ -772,6 +945,8 @@ def generate_tts_for_sections(
                 
                 # Add to results list
                     results.append(result)
+                    if progress_callback:
+                        progress_callback(results[-1])
                 else:
                 # Add failure information
                     result["file"] = file_path
@@ -779,6 +954,8 @@ def generate_tts_for_sections(
                     result["word_count"] = word_count
                     result["status"] = "failed"
                     results.append(result)
+                    if progress_callback:
+                        progress_callback(results[-1])
         
             except Exception as e:
             # Handle any other exceptions
@@ -790,6 +967,8 @@ def generate_tts_for_sections(
                     "processing_time": 0,
                     "word_count": 0
                 })
+                if progress_callback:
+                    progress_callback(results[-1])
     
     return results
 
@@ -1145,7 +1324,7 @@ def main():
                         st.write("**Failed files:**")
                         for result in results:
                             if not result["success"]:
-                                st.error(f"{os.path.basename(result['file'])}: {result['message']}")
+                                st.error(f"{get_result_file_name(result)}: {result['message']}")
             
             # Overall summary
             st.subheader("Overall Summary")
@@ -1248,6 +1427,12 @@ def main():
     )
     st.caption(top_summary["runtime_message"])
 
+    if "kokoro_run_telemetry" not in st.session_state:
+        st.session_state.kokoro_run_telemetry = None
+
+    telemetry_placeholder = st.empty()
+    render_run_telemetry(telemetry_placeholder, st.session_state.get("kokoro_run_telemetry"))
+
     st.subheader("Settings")
     settings_left, settings_right = st.columns([1, 1])
     with settings_left:
@@ -1341,6 +1526,8 @@ def main():
         total_sections = max(1, inventory["summary"]["section_count"])
         processed_sections = 0
         overall_start_time = time.time()
+        st.session_state.kokoro_run_telemetry = create_run_telemetry(total_sections)
+        render_run_telemetry(telemetry_placeholder, st.session_state.kokoro_run_telemetry)
 
         for language in enabled_languages:
             lang_settings = st.session_state.language_settings[language]
@@ -1358,6 +1545,46 @@ def main():
 
             for course, lectures in language_files.items():
                 for lecture, lecture_data in lectures.items():
+                    def progress_callback(section_result, current_language=language, current_course=course, current_lecture=lecture):
+                        nonlocal processed_sections, language_processed
+
+                        processed_sections += 1
+                        language_processed += 1
+
+                        telemetry = st.session_state.get("kokoro_run_telemetry")
+                        if telemetry:
+                            update_run_telemetry(
+                                telemetry,
+                                section_result,
+                                language=current_language,
+                                course=current_course,
+                                lecture=current_lecture,
+                            )
+                            render_run_telemetry(telemetry_placeholder, telemetry)
+
+                        language_progress.progress(min(1.0, language_processed / language_total))
+                        main_progress_bar.progress(min(1.0, processed_sections / total_sections))
+
+                        elapsed_language_time = time.time() - language_start
+                        if language_processed > 0:
+                            sections_per_second = language_processed / elapsed_language_time
+                            remaining_sections = language_total - language_processed
+                            eta_seconds = remaining_sections / sections_per_second if sections_per_second > 0 else 0
+                            minutes, seconds = divmod(int(eta_seconds), 60)
+                            language_status.text(
+                                f"Progress: {language_processed}/{language_total} sections. ETA: {minutes}m {seconds}s"
+                            )
+
+                        elapsed_overall = time.time() - overall_start_time
+                        if processed_sections > 0:
+                            sections_per_second = processed_sections / elapsed_overall
+                            remaining = total_sections - processed_sections
+                            eta_seconds = remaining / sections_per_second if sections_per_second > 0 else 0
+                            eta_minutes, eta_seconds = divmod(int(eta_seconds), 60)
+                            main_status.text(
+                                f"Overall progress: {processed_sections}/{total_sections} sections. ETA: {eta_minutes}m {eta_seconds}s"
+                            )
+
                     language_status.info(f"Processing {course} - {lecture}")
                     lecture_base_dir = lecture_data["base_dir"]
                     transcript_audio_dir = os.path.join(lecture_base_dir, f"{language} audio")
@@ -1379,10 +1606,9 @@ def main():
                             conflict_policy=conflict_policy,
                             request_timeout_sec=host_settings["request_timeout_sec"],
                             max_sections_per_batch=host_settings["max_sections_per_batch"],
+                            progress_callback=progress_callback,
                         )
                         language_results.extend(transcript_results)
-                        language_processed += len(transcript_results)
-                        processed_sections += len(transcript_results)
 
                     if lecture_data["summary"]["section_files"]:
                         summary_results = generate_tts_for_sections(
@@ -1398,29 +1624,9 @@ def main():
                             conflict_policy=conflict_policy,
                             request_timeout_sec=host_settings["request_timeout_sec"],
                             max_sections_per_batch=host_settings["max_sections_per_batch"],
+                            progress_callback=progress_callback,
                         )
                         language_results.extend(summary_results)
-                        language_processed += len(summary_results)
-                        processed_sections += len(summary_results)
-
-                    language_progress.progress(language_processed / language_total)
-                    main_progress_bar.progress(processed_sections / total_sections)
-
-                    elapsed_language_time = time.time() - language_start
-                    if language_processed > 0:
-                        sections_per_second = language_processed / elapsed_language_time
-                        remaining_sections = language_total - language_processed
-                        eta_seconds = remaining_sections / sections_per_second if sections_per_second > 0 else 0
-                        minutes, seconds = divmod(int(eta_seconds), 60)
-                        language_status.text(f"Progress: {language_processed}/{language_total} sections. ETA: {minutes}m {seconds}s")
-
-                    elapsed_overall = time.time() - overall_start_time
-                    if processed_sections > 0:
-                        sections_per_second = processed_sections / elapsed_overall
-                        remaining = total_sections - processed_sections
-                        eta_seconds = remaining / sections_per_second if sections_per_second > 0 else 0
-                        eta_minutes, eta_seconds = divmod(int(eta_seconds), 60)
-                        main_status.text(f"Overall progress: {processed_sections}/{total_sections} sections. ETA: {eta_minutes}m {eta_seconds}s")
 
             language_progress.progress(1.0)
             language_status.success(f"{language} processing complete: {language_processed} sections handled")
@@ -1428,6 +1634,10 @@ def main():
 
         main_progress_bar.progress(1.0)
         main_status.success(f"All {len(enabled_languages)} languages handled successfully")
+        telemetry = st.session_state.get("kokoro_run_telemetry")
+        if telemetry:
+            telemetry["active"] = False
+            render_run_telemetry(telemetry_placeholder, telemetry)
 
         with results_container:
             st.subheader("Results")
@@ -1446,7 +1656,7 @@ def main():
                 with st.expander(f"{language} Results"):
                     for result in results:
                         status_icon = "✅" if result["status"] == "processed" else "⏭️" if result["status"] in {"skipped", "reported"} else "❌"
-                        file_name = os.path.basename(result["file"])
+                        file_name = get_result_file_name(result)
                         st.write(f"{status_icon} {file_name}: {result['message']}")
 
 

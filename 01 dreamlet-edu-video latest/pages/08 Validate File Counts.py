@@ -145,19 +145,28 @@ def get_input_directory() -> str:
 
 def extract_course_info(file_path: str) -> CourseInfo:
     """Extract course information from file path"""
-    parts = Path(file_path).parts
+    parts = Path(file_path).resolve().parts
+    search_parts = parts
+    input_dir = Path(get_input_directory()).resolve()
+    input_parts = input_dir.parts
+
+    if len(parts) >= len(input_parts) and parts[: len(input_parts)] == input_parts:
+        search_parts = parts[len(input_parts) :]
     
     # Look for course pattern in path parts
     course_name = "Unknown Course"
     course_number = "999"
     base_directory = ""
     
-    for i, part in enumerate(parts):
+    for i, part in enumerate(search_parts):
         # Look for patterns like "31 Course Name" or "389 Web3 Economics"
         if re.match(r'^\d{1,3}\s+', part):
             course_name = part
             course_number = re.match(r'^(\d{1,3})', part).group(1)
-            base_directory = str(Path(*parts[:i+1]))
+            if search_parts is not parts:
+                base_directory = str(input_dir / Path(*search_parts[:i+1]))
+            else:
+                base_directory = str(Path(*parts[:i+1]))
             break
     
     return CourseInfo(

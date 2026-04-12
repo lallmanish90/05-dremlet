@@ -190,6 +190,76 @@ def find_processed_lectures() -> Dict[str, Dict[str, Dict]]:
 
 # --- End of copied code ---
 
+
+def build_mismatch_buckets(organized_data: Dict[str, Dict[str, Dict]], selected_language: str) -> Tuple[List[Dict], List[Dict]]:
+    """Split problematic lectures into fixable and non-fixable buckets."""
+    fixable_lectures = []
+    non_fixable_lectures = []
+
+    for subject, courses in organized_data.items():
+        for course, sections in courses.items():
+            for section, lectures in sections.items():
+                for lecture, lecture_data in lectures.items():
+                    if selected_language not in lecture_data.get("languages", []):
+                        continue
+
+                    lang_data = lecture_data.get("language_data", {}).get(selected_language, {})
+                    audio_count = lang_data.get("audio_count", 0)
+                    image_count = lang_data.get("image_count", 0)
+                    summary_audio_count = lang_data.get("summary_audio_count", 0)
+
+                    if audio_count == 0 and image_count == 0 and summary_audio_count == 0:
+                        continue
+
+                    lecture_summary = {
+                        "key": f"{subject}_{course}_{section}_{lecture}",
+                        "display": f"{lecture} ({course})",
+                        "path": lecture_data["path"],
+                        "language": selected_language,
+                        "audio_count": audio_count,
+                        "image_count": image_count,
+                        "summary_count": summary_audio_count,
+                        "image_files": lang_data.get("image_files", []),
+                    }
+
+                    if audio_count > 0 and image_count > 0 and summary_audio_count > 0 and audio_count == summary_audio_count:
+                        if image_count == audio_count + 2:
+                            fixable_lectures.append({
+                                **lecture_summary,
+                                "fix_type": "remove_excess",
+                            })
+                            continue
+                        if image_count == audio_count - 1:
+                            fixable_lectures.append({
+                                **lecture_summary,
+                                "fix_type": "duplicate_last",
+                            })
+                            continue
+                        if image_count == audio_count:
+                            continue
+
+                    reason = ""
+                    if image_count == 0:
+                        reason = "Missing lecture images"
+                    elif audio_count == 0:
+                        reason = "Missing regular audio"
+                    elif summary_audio_count == 0:
+                        reason = "Missing summary audio"
+                    elif audio_count != summary_audio_count:
+                        reason = "Regular audio and summary audio counts do not match"
+                    else:
+                        reason = (
+                            "Image mismatch is not one of the supported auto-fix cases "
+                            f"({image_count} images vs {audio_count} audio)"
+                        )
+
+                    non_fixable_lectures.append({
+                        **lecture_summary,
+                        "reason": reason,
+                    })
+
+    return fixable_lectures, non_fixable_lectures
+
 def fix_image_mismatch(lecture_path: str, language: str, target_count: int, current_images: List[str]) -> Tuple[bool, str]:
     """
     Fix image count mismatch by removing excess and renaming files
@@ -291,49 +361,11 @@ def main():
     if 'select_all_fixable' not in st.session_state:
         st.session_state.select_all_fixable = False
     
-    # Collect all mismatched lectures
-    mismatched_lectures = []
-    for subject, courses in organized_data.items():
-        for course, sections in courses.items():
-            for section, lectures in sections.items():
-                for lecture, lecture_data in lectures.items():
-                    if selected_language in lecture_data.get("languages", []):
-                        lang_data = lecture_data.get("language_data", {}).get(selected_language, {})
-                        audio_count = lang_data.get("audio_count", 0)
-                        image_count = lang_data.get("image_count", 0)
-                        summary_audio_count = lang_data.get("summary_audio_count", 0)
-                        
-                        # Check for fixable mismatches
-                        if audio_count > 0 and image_count > 0 and summary_audio_count > 0:
-                            if audio_count == summary_audio_count:
-                                if image_count == audio_count + 2:  # Images +2 excess
-                                    mismatched_lectures.append({
-                                        'key': f"{subject}_{course}_{section}_{lecture}",
-                                        'display': f"{lecture} ({course})",
-                                        'path': lecture_data['path'],
-                                        'language': selected_language,
-                                        'audio_count': audio_count,
-                                        'image_count': image_count,
-                                        'summary_count': summary_audio_count,
-                                        'fix_type': 'remove_excess',
-                                        'image_files': lang_data.get('image_files', [])
-                                    })
-                                elif image_count == audio_count - 1:  # Images -1 (audio +1)
-                                    mismatched_lectures.append({
-                                        'key': f"{subject}_{course}_{section}_{lecture}",
-                                        'display': f"{lecture} ({course})",
-                                        'path': lecture_data['path'],
-                                        'language': selected_language,
-                                        'audio_count': audio_count,
-                                        'image_count': image_count,
-                                        'summary_count': summary_audio_count,
-                                        'fix_type': 'duplicate_last',
-                                        'image_files': lang_data.get('image_files', [])
-                                    })
+    fixable_lectures, non_fixable_lectures = build_mismatch_buckets(organized_data, selected_language)
 
     # Fixable lectures section - collapsible and closed by default
-    with st.expander(f"🔧 Fixable Lectures ({len(mismatched_lectures)} found)", expanded=False):
-        if not mismatched_lectures:
+    with st.expander(f"🔧 Fixable Lectures ({len(fixable_lectures)} found)", expanded=False):
+        if not fixable_lectures:
             st.info("No fixable mismatches found. Only lectures with exactly +2 excess images or -1 images (when audio counts match) can be automatically fixed.")
         else:
             # Select All / Unselect All buttons
@@ -353,7 +385,7 @@ def main():
             
             # Show fixable lectures with checkboxes
             selected_fixes = []
-            for lecture_info in mismatched_lectures:
+            for lecture_info in fixable_lectures:
                 fix_description = ""
                 if lecture_info['fix_type'] == 'remove_excess':
                     fix_description = f"Remove 2 excess images ({lecture_info['image_count']} → {lecture_info['audio_count']})"
@@ -431,6 +463,19 @@ def main():
                         if st.button("❌ Cancel", key="cancel_fixes"):
                             st.session_state.confirm_fixes = False
                             st.rerun()
+
+    with st.expander(f"🧾 Not Automatically Fixable ({len(non_fixable_lectures)} found)", expanded=False):
+        if not non_fixable_lectures:
+            st.info("No non-fixable mismatches found.")
+        else:
+            for lecture_info in non_fixable_lectures:
+                st.write(
+                    f"• {lecture_info['display']}: "
+                    f"{lecture_info['audio_count']} audio • "
+                    f"{lecture_info['image_count']} images • "
+                    f"{lecture_info['summary_count']} summary — "
+                    f"{lecture_info['reason']}"
+                )
 
     # All lectures status section
     st.header("📋 All Lectures Status")

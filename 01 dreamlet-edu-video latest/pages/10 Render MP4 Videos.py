@@ -759,6 +759,17 @@ def build_top_summary(machine_info: Dict[str, Any], encoder: str, inventory: Dic
         ],
     }
 
+
+def build_course_selection_state_key(subject: str, course: str) -> str:
+    return f"mp4_all_{subject}_{course}"
+
+
+def set_global_course_selection(session_state: Dict[str, Any], organized_data: Dict[str, Any], select_all: bool) -> None:
+    session_state["mp4_select_all"] = select_all
+    for subject, courses in organized_data.items():
+        for course in courses:
+            session_state[build_course_selection_state_key(subject, course)] = select_all
+
 def detect_hardware_acceleration(config: Optional[BalancedMachineConfig] = None) -> Tuple[str, Optional[str], Dict]:
     """Detect available hardware acceleration and capabilities"""
     system = platform.system()
@@ -1321,14 +1332,17 @@ def main():
     top_summary = build_top_summary(machine_info, encoder, inventory, CONFLICT_POLICY_LABELS[conflict_policy])
 
     st.subheader("Lecture Selection")
+    if "mp4_select_all" not in st.session_state:
+        st.session_state.mp4_select_all = False
+
     sel_col1, sel_col2 = st.columns(2)
     with sel_col1:
-        if st.button("Select All", key="mp4_select_all"):
-            st.session_state.mp4_select_all = True
+        if st.button("Select All", key="mp4_select_all_btn"):
+            set_global_course_selection(st.session_state, organized_data, True)
             st.rerun()
     with sel_col2:
-        if st.button("Unselect All", key="mp4_unselect_all"):
-            st.session_state.mp4_select_all = False
+        if st.button("Unselect All", key="mp4_unselect_all_btn"):
+            set_global_course_selection(st.session_state, organized_data, False)
             st.rerun()
 
     select_all = st.session_state.get("mp4_select_all", False)
@@ -1337,7 +1351,14 @@ def main():
     for subject in organized_data:
         for course in organized_data[subject]:
             with st.expander(f"Course: {course}"):
-                all_in_course = st.checkbox(f"Select all in {course}", key=f"mp4_all_{subject}_{course}", value=select_all)
+                course_selection_key = build_course_selection_state_key(subject, course)
+                if course_selection_key not in st.session_state:
+                    st.session_state[course_selection_key] = select_all
+
+                all_in_course = st.checkbox(
+                    f"Select all in {course}",
+                    key=course_selection_key,
+                )
 
                 for section in organized_data[subject][course]:
                     for lecture in organized_data[subject][course][section]:

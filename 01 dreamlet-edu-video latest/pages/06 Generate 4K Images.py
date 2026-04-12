@@ -30,6 +30,7 @@ Machine-aware final version for:
 import streamlit as st
 import os
 import re
+import sys
 import time
 import cv2
 import numpy as np
@@ -59,6 +60,22 @@ import concurrent.futures
 import threading
 from functools import lru_cache
 
+
+def safe_console_print(message: str) -> None:
+    normalized_message = (
+        str(message)
+        .replace("✅", "[OK]")
+        .replace("❌", "[ERROR]")
+        .replace("🔍", "[DEBUG]")
+    )
+    stream = sys.stdout
+    if stream is None:
+        return
+    encoding = getattr(stream, "encoding", None) or "utf-8"
+    safe_message = normalized_message.encode(encoding, errors="replace").decode(encoding, errors="replace")
+    print(safe_message)
+
+
 # Optional GPU framework imports
 GPU_FRAMEWORKS = {
     'cuda': False,
@@ -68,9 +85,9 @@ try:
     import cupy as cp
     import cupyx.scipy.ndimage as gpu_ndimage
     GPU_FRAMEWORKS['cuda'] = True
-    print("✅ CUDA framework available")
+    safe_console_print("✅ CUDA framework available")
 except ImportError:
-    print("❌ CUDA framework not available - install with: pip install cupy-cuda12x")
+    safe_console_print("❌ CUDA framework not available - install with: pip install cupy-cuda12x")
 
 FALLBACK_PROFILE = {
     'name': 'Generic machine',
@@ -193,7 +210,7 @@ def detect_gpu_info() -> Dict:
         try:
             result = subprocess.run(['uname', '-m'], capture_output=True, text=True)
             arch = result.stdout.strip()
-            print(f"🔍 macOS Architecture: {arch}")
+            safe_console_print(f"🔍 macOS Architecture: {arch}")
 
             if arch == 'arm64' or detect_apple_silicon_capability():
                 gpu_info.update({
@@ -202,11 +219,11 @@ def detect_gpu_info() -> Dict:
                     'gpu_name': 'Apple Silicon GPU',
                     'unified_memory': True,
                 })
-                print("✅ Apple Silicon GPU detected")
+                safe_console_print("✅ Apple Silicon GPU detected")
             else:
-                print("❌ Intel Mac detected (no Apple Silicon GPU)")
+                safe_console_print("❌ Intel Mac detected (no Apple Silicon GPU)")
         except Exception as exc:
-            print(f"❌ Error detecting Apple Silicon: {exc}")
+            safe_console_print(f"❌ Error detecting Apple Silicon: {exc}")
 
     return gpu_info
 
@@ -372,7 +389,7 @@ class MachineDetector:
     def detect_machine(self) -> Dict:
         system_info = collect_system_info()
 
-        print("🔍 Detection Debug:")
+        print("Detection Debug:")
         print(f"  Hostname: {system_info.get('hostname', 'unknown')}")
         print(f"  Platform: {system_info['platform']}")
         print(f"  Architecture: {system_info['architecture']}")
@@ -382,7 +399,7 @@ class MachineDetector:
         print(f"  GPU Type: {system_info.get('gpu_type', 'None')}")
 
         selected_profile = select_machine_profile(system_info, self.profiles, self.override_profile_id)
-        print(f"✅ Selected machine profile: {selected_profile['machine_id']} ({selected_profile['match_source']})")
+        print(f"Selected machine profile: {selected_profile['machine_id']} ({selected_profile['match_source']})")
         return selected_profile
 
     def get_optimization_settings(self) -> Dict:
